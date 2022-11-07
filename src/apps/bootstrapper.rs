@@ -12,11 +12,10 @@ static FILE_PATH: &str = "configs/bootstrapper.conf";
 fn handle_client(file: String,mut stream: TcpStream, _addr: SocketAddr) {
     let mut buf = [0; 1500];
 
-    let header: String;
-    match stream.read(&mut buf) {
-        Ok(_) => header = Status::OK.get_status_header(),
-        Err(_) => header = Status::ERROR.get_status_header()
-    }
+    let header = match stream.read(&mut buf) {
+        Ok(_) => Status::OK.get_status_header(),
+        Err(_) => Status::ERROR.get_status_header()
+    };
 
     stream.write(format!("{}\n\n{}", header, file).as_bytes()).unwrap();
 }
