@@ -9,6 +9,10 @@ edition = "2021"
 name = "bootstrapper"
 path = "src/apps/bootstrapper.rs"
 
+[[bin]]
+name = "node"
+path = "src/apps/node.rs"
+
 [lib]
 name = "lib"
 path = "src/lib/lib.rs"
