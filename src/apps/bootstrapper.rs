@@ -5,14 +5,20 @@ use std::{
     thread
 };
 
+use lib::http::status::Status;
+
 static FILE_PATH: &str = "configs/bootstrapper.conf";
 
 fn handle_client(file: String,mut stream: TcpStream, _addr: SocketAddr) {
     let mut buf = [0; 1500];
-    stream.read(&mut buf)
-        .expect("Error reading request from client");
 
-    stream.write(file.as_bytes()).unwrap();
+    let header: String;
+    match stream.read(&mut buf) {
+        Ok(_) => header = Status::OK.get_status_header(),
+        Err(_) => header = Status::ERROR.get_status_header()
+    }
+
+    stream.write(format!("{}\n\n{}", header, file).as_bytes()).unwrap();
 }
 
 fn main() {

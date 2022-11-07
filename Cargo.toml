@@ -9,4 +9,9 @@ edition = "2021"
 name = "bootstrapper"
 path = "src/apps/bootstrapper.rs"
 
+[lib]
+name = "lib"
+path = "src/lib/lib.rs"
+crate-type = ["lib"]
+
 [dependencies]
