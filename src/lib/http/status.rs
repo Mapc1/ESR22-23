@@ -11,6 +11,6 @@ impl Status {
             Status::ERROR => "404 ERROR",
         };
 
-        format!("{} {}", http_version, status)
+        format!("{http_version} {status}")
     }
 }
