@@ -5,24 +5,54 @@ use std::{
     env
 };
 
-use lib::http::connection::get_request;
+use lib::{
+    http::connection::get_request,
+    logging::logger::Logger
+};
 
-fn request_file(bootstrapper_addr: &String) -> String {
-    let mut stream = TcpStream::connect(bootstrapper_addr)
-        .expect("Error connecting to server. Perhaps it's down?");
+fn request_file(bootstrapper_addr: &String) -> Result<String, String> {
+    let mut stream = match TcpStream::connect(bootstrapper_addr) {
+        Ok(stream) => stream,
+        Err(_) => return Err("Error connecting to server. Perhaps it's down?".to_string()),
+    };
 
-    let body = get_request(&mut stream, "Olá ^.^")
-        .expect("Error requesting file from bootstrapper");
+    let body = match get_request(&mut stream, "Olá ^.^") {
+        Ok(body) => body,
+        Err(_) => return Err("Error requesting file from bootstrapper".to_string()),
+    };
 
-    body
+    Ok(body)
 }
 
-fn main() {
-    let args: Vec<String> = env::args().collect();
-    let bootstrapper_addr = args.get(1)
-        .expect("This program requires the bootstrapper ip address as an argument, but none were given");
-        
-    let file = request_file(bootstrapper_addr);
+fn main() -> Result<(),()>{
+    let logger = Logger::new(true, true, true);
 
-    println!("{}", file);
+    let args: Vec<String> = env::args().collect();
+    let bootstrapper_addr = match args.get(1) {
+        Some(addr) => addr,
+        None => {
+            logger.log_error(
+                "This program requires the bootstrapper ip address as an argument, but none were given".to_string()
+            );
+            return Err(());
+        }
+    };
+        
+    logger.log_info(
+        "Hello! Requesting topology from bootstrap server".to_string()
+    );
+    let file = match request_file(bootstrapper_addr) {
+        Ok(content) => content,
+        Err(error) => {
+            logger.log_error(error.to_string());
+            return Err(());
+        }
+    };
+    logger.log_info(
+        "File received successfully. Parsing...".to_string()
+    );
+
+    println!("{file}");
+
+    Ok(())
 }
