@@ -1,37 +1,54 @@
 use std::{
-    net::{TcpListener, TcpStream, SocketAddr},
+    net::{TcpListener, TcpStream},
     fs,
-    io::{Write, Read},
-    thread,
+    io::Read,
+    thread, sync::{Mutex, Arc},
 };
 
 use lib::{
-    http::status::Status,
+    http::{
+        status::Status,
+        response::respond
+    },
     logging::logger::Logger,
 };
+
 
 static FILE_PATH: &str = "configs/bootstrapper.conf";
 static LISTENNING_ADDRESS: &str = "0.0.0.0:8080";
 
-fn handle_client(file: String,mut stream: TcpStream, _addr: SocketAddr) {
+
+fn handle_client(file: String, mut stream: TcpStream, logger: Arc<Mutex<Logger>>) {
     let mut buf = [0; 1500];
 
-    let header = match stream.read(&mut buf) {
-        Ok(_) => Status::OK.get_status_header(),
-        Err(_) => Status::ERROR.get_status_header()
+    if let Err(error) = stream.read(&mut buf) {
+        logger.lock().unwrap().log_error(
+            error.to_string()
+        );
+        return;
     };
 
-    stream.write(format!("{}\n\n{}", header, file).as_bytes()).unwrap();
+    if let Err(error) = respond(&mut stream, file, Status::OK) {
+        logger.lock().unwrap().log_error(error.to_string())
+    };
 }
 
 fn main() -> Result<(),()> {
-    let logger = Logger::new(true, true, true);
+    let logger = Arc::new(
+        Mutex::new(
+            Logger::new(true, true, true)
+        )
+    );
 
-    logger.log_info("Hello! Reading config file...".to_string());
+    logger.lock().unwrap().log_info(
+        "Hello! Reading config file...".to_string()
+    );
     let file_content = match fs::read_to_string(FILE_PATH) {
         Ok(content) => content,
         Err(_) => {
-            logger.log_error("Error reading file contents!".to_string());
+            logger.lock().unwrap().log_error(
+                "Error reading file contents!".to_string()
+            );
             return Err(());
         }
     };
@@ -39,20 +56,29 @@ fn main() -> Result<(),()> {
     let listener = match TcpListener::bind(LISTENNING_ADDRESS) {
         Ok(socket) => socket,
         Err(_) => {
-            logger.log_error(format!("Error openning socket at {}", LISTENNING_ADDRESS));
+            logger.lock().unwrap().log_error(
+                format!("Error openning socket at {LISTENNING_ADDRESS}")
+            );
             return Err(());
         }
     };
 
-    logger.log_info(format!("Bootstrap server ready! Listening on port {}...", listener.local_addr().unwrap().port()));
+    let local_port = listener.local_addr().unwrap().port();
+    logger.lock().unwrap().log_info(
+        format!("Bootstrap server ready! Listening on port {local_port}...")
+    );
+    
     for con in listener.incoming() {
         let stream = con.unwrap();
-        let addr = stream.peer_addr().unwrap();
+        let peer_addr = stream.peer_addr().unwrap();
         let copy = file_content.clone();
+        let logger_cpy = logger.clone();
 
-        logger.log_dbg(format!("Accepted connection from {}", stream.peer_addr().unwrap()));
+        logger.lock().unwrap().log_dbg(
+            format!("Accepted connection from {peer_addr}")
+        );
         thread::spawn(move || {
-            handle_client(copy, stream, addr);
+            handle_client(copy, stream, logger_cpy);
         });
     }
 
