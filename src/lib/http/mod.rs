@@ -1,2 +1,2 @@
-pub mod status;
 pub mod connection;
+pub mod status;

@@ -1,6 +1,6 @@
 pub enum Status {
     OK,
-    ERROR
+    ERROR,
 }
 
 impl Status {
@@ -8,7 +8,7 @@ impl Status {
         let http_version = "HTTP/1.1";
         let status = match self {
             Status::OK => "200 OK",
-            Status::ERROR => "404 ERROR"
+            Status::ERROR => "404 ERROR",
         };
 
         format!("{} {}", http_version, status)

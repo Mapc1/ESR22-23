@@ -10,8 +10,8 @@ name = "bootstrapper"
 path = "src/apps/bootstrapper.rs"
 
 [[bin]]
-name = "node"
-path = "src/apps/node.rs"
+name = "oNode"
+path = "src/apps/oNode.rs"
 
 [lib]
 name = "lib"
