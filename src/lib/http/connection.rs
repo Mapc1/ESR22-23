@@ -1,10 +1,10 @@
 use std::{
     io::{Read, Write},
     net::TcpStream,
-    str::from_utf8, fmt::Error,
+    str::from_utf8,
 };
 
-pub fn get_request(stream: &mut TcpStream, msg: &str) -> Result<String, Error> {
+pub fn get_request(stream: &mut TcpStream, msg: &str) -> Result<String, ()> {
     match stream.write(msg.as_bytes()) {
         Ok(_) => {
             let mut buf = [0; 1500];
@@ -12,11 +12,11 @@ pub fn get_request(stream: &mut TcpStream, msg: &str) -> Result<String, Error> {
 
             let response = from_utf8(&buf).unwrap();
 
-            let (header, body) = response.split_once("\n\n").unwrap();
+            let (_, body) = response.split_once("\n\n").unwrap();
 
-            (header.to_string(), body.to_string())
+            Ok(body.to_string())
         }
-        Err(_) => Error,
+        Err(_) => Err(()),
     }
 
 }

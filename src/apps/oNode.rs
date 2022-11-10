@@ -1,3 +1,5 @@
+#![allow(non_snake_case)]
+
 use std::{
     net::TcpStream,
     env
@@ -9,7 +11,8 @@ fn request_file(bootstrapper_addr: &String) -> String {
     let mut stream = TcpStream::connect(bootstrapper_addr)
         .expect("Error connecting to server. Perhaps it's down?");
 
-    let (_, body) = get_request(&mut stream, "Olá ^.^");
+    let body = get_request(&mut stream, "Olá ^.^")
+        .expect("Error requesting file from bootstrapper");
 
     body
 }
