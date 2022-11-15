@@ -1,5 +1,9 @@
 #![allow(non_snake_case)]
 
+static INFO: bool = true;
+static ERROR: bool = true;
+static DBG: bool = true;
+
 use std::{
     net::TcpStream,
     env
@@ -7,7 +11,8 @@ use std::{
 
 use lib::{
     http::connection::get_request,
-    logging::logger::Logger
+    logging::logger::Logger, 
+    node::routing::overlay_graph::OverlayGraph,
 };
 
 fn request_file(bootstrapper_addr: &String) -> Result<String, String> {
@@ -25,7 +30,7 @@ fn request_file(bootstrapper_addr: &String) -> Result<String, String> {
 }
 
 fn main() -> Result<(),()>{
-    let logger = Logger::new(true, true, true);
+    let logger = Logger::new(INFO, ERROR, DBG);
 
     let args: Vec<String> = env::args().collect();
     let bootstrapper_addr = match args.get(1) {
@@ -37,7 +42,7 @@ fn main() -> Result<(),()>{
             return Err(());
         }
     };
-        
+     
     logger.log_info(
         "Hello! Requesting topology from bootstrap server".to_string()
     );
@@ -51,8 +56,10 @@ fn main() -> Result<(),()>{
     logger.log_info(
         "File received successfully. Parsing...".to_string()
     );
+    logger.log_dbg(format!("{file:?}"));
 
-    println!("{file}");
+    let o_graph = OverlayGraph::parse_graph_file(file);
+    logger.log_dbg(format!("{o_graph:?}"));
 
     Ok(())
 }

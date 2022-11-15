@@ -19,3 +19,4 @@ path = "src/lib/lib.rs"
 crate-type = ["lib"]
 
 [dependencies]
+regex = "1.7.0"
