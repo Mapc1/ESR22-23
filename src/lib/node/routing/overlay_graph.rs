@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::net::Ipv4Addr;
 
 use regex::Regex;
@@ -6,17 +7,17 @@ use super::node::Node;
 
 #[derive(Debug)]
 pub struct OverlayGraph {
-    pub nodes: Vec<(String,Node)>
+    nodes: HashMap<String,Node>
 }
 
 impl Default for OverlayGraph {
     fn default() -> Self {
-        Self { nodes: Vec::new() }
+        Self { nodes: HashMap::new() }
     }
 }
 
 impl OverlayGraph {
-    pub fn parse_graph_file(file: String) -> Result<Self, String> {
+    pub fn parse_graph_file(file: String, own_ip: String) -> Result<Self, String> {
         let reg = Regex::new(r"^(\d{1,3}).(\d{1,3}).(\d{1,3}).(\d{1,3})$").unwrap();
         let mut o_graph = OverlayGraph::default();
 
@@ -33,7 +34,9 @@ impl OverlayGraph {
 
             let mut links: Vec<String> = Vec::new();
             for ip in right.split(",") {
-                links.push(ip.to_string());
+                if own_ip != ip {
+                    links.push(ip.to_string());
+                }
             }
 
             let node = Node::new(
@@ -53,6 +56,10 @@ impl OverlayGraph {
     }
 
     pub fn add_node(&mut self, node: Node) {
-        self.nodes.push((node.ip.to_string(),node));
+        self.nodes.insert(node.get_ip().to_string(),node);
+    }
+
+    pub fn get_nodes(&self) -> HashMap<String, Node> {
+        self.nodes.clone()
     }
 }
