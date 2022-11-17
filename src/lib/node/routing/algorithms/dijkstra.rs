@@ -108,7 +108,7 @@ impl DijkstraTable {
         }
 
         let mut table: HashMap<String, (String, u32)> = HashMap::new();
-        for (addr, (link, cost)) in dijkstra_tab.table.iter() {
+        for (addr, (_, cost)) in dijkstra_tab.table.iter() {
             let next_jump = dijkstra_tab.calc_next_jump(addr)?;
 
             table.insert(addr.clone(), (next_jump, *cost));

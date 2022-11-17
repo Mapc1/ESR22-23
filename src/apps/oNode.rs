@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 use std::{
-    net::{TcpStream, Ipv4Addr},
+    net::TcpStream,
     env
 };
 use lib::{
