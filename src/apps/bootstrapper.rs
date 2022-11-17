@@ -17,38 +17,35 @@ use lib::{
 static FILE_PATH: &str = "configs/bootstrapper.conf";
 static LISTENNING_ADDRESS: &str = "0.0.0.0:8080";
 
+static INFO: bool = true;
+static ERROR: bool = true;
+static DEBUG: bool = true;
 
-fn handle_client(file: String, mut stream: TcpStream, logger: Arc<Mutex<Logger>>) {
+fn handle_client(file: String, mut stream: TcpStream, logger: Logger) {
     let mut buf = [0; 1500];
 
     if let Err(error) = stream.read(&mut buf) {
-        logger.lock().unwrap().log_error(
-            error.to_string()
-        );
+        logger.log_error(error.to_string())
+            .expect("Log error");
         return;
     };
 
     if let Err(error) = respond(&mut stream, file, Status::OK) {
-        logger.lock().unwrap().log_error(error.to_string())
+        logger.log_error(error.to_string())
+            .expect("Log error")
     };
 }
 
 fn main() -> Result<(),()> {
-    let logger = Arc::new(
-        Mutex::new(
-            Logger::new(true, true, true)
-        )
-    );
+    let logger = Logger::new(INFO, ERROR, DEBUG);
 
-    logger.lock().unwrap().log_info(
-        "Hello! Reading config file...".to_string()
-    );
+    logger.log_info("Hello! Reading config file...".to_string())
+        .expect("Log info");
     let file_content = match fs::read_to_string(FILE_PATH) {
         Ok(content) => content,
         Err(_) => {
-            logger.lock().unwrap().log_error(
-                "Error reading file contents!".to_string()
-            );
+            logger.log_error("Error reading file contents!".to_string())
+                .expect("Log error");
             return Err(());
         }
     };
@@ -56,17 +53,15 @@ fn main() -> Result<(),()> {
     let listener = match TcpListener::bind(LISTENNING_ADDRESS) {
         Ok(socket) => socket,
         Err(_) => {
-            logger.lock().unwrap().log_error(
-                format!("Error openning socket at {LISTENNING_ADDRESS}")
-            );
+            logger.log_error(format!("Error opening socket at {LISTENNING_ADDRESS}"))
+                .expect("Log error");
             return Err(());
         }
     };
 
     let local_port = listener.local_addr().unwrap().port();
-    logger.lock().unwrap().log_info(
-        format!("Bootstrap server ready! Listening on port {local_port}...")
-    );
+    logger.log_info(format!("Bootstrap server ready! Listening on port {local_port}..."))
+        .expect("Log info");
     
     for con in listener.incoming() {
         let stream = con.unwrap();
@@ -74,9 +69,8 @@ fn main() -> Result<(),()> {
         let copy = file_content.clone();
         let logger_cpy = logger.clone();
 
-        logger.lock().unwrap().log_dbg(
-            format!("Accepted connection from {peer_addr}")
-        );
+        logger.log_dbg(format!("Accepted connection from {peer_addr}"))
+            .expect("Log debug");
         thread::spawn(move || {
             handle_client(copy, stream, logger_cpy);
         });
