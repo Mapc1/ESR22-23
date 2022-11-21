@@ -41,43 +41,43 @@ fn main() -> Result<(),()>{
         None => {
             logger.log_error(
                 "This program requires the bootstrapper ip address as an argument, but none were given".to_string()
-            );
+            ).expect("Log error");
             return Err(());
         }
     };
      
     logger.log_info(
         "Hello! Requesting topology from bootstrap server".to_string()
-    );
+    ).expect("Log info");
     let file = match request_file(bootstrapper_addr) {
         Ok(content) => content,
         Err(error) => {
-            logger.log_error(error.to_string());
+            logger.log_error(error.to_string()).expect("Log error");
             return Err(());
         }
     };
     logger.log_info(
         "File received successfully. Parsing...".to_string()
-    );
-    logger.log_dbg(format!("File received: {file:#?}"));
+    ).expect("Log info");
+    logger.log_dbg(format!("File received: {file:#?}")).expect("Log debug");
 
     let o_graph = match OverlayGraph::parse_graph_file(file, "10.0.3.2".to_string()) {
         Ok(graph) => graph,
         Err(msg) => {
-            logger.log_error(msg);
+            logger.log_error(msg).expect("Log error");
             return Err(())
         }
     };
-    logger.log_dbg(format!("Overlay graph parsed: {o_graph:#?}"));
+    logger.log_dbg(format!("Overlay graph parsed: {o_graph:#?}")).expect("Log debug");
 
     let routing_tab = match RoutingTable::calc_paths(o_graph, "10.0.3.2".to_string()) {
         Ok(table) => table,
         Err(msg) => {
-            logger.log_error(msg);
+            logger.log_error(msg).expect("Log error");
             return Err(())
         }
     };
-    logger.log_dbg(format!("Routing table calculated: {routing_tab:#?}"));
+    logger.log_dbg(format!("Routing table calculated: {routing_tab:#?}")).expect("Log debug");
 
     Ok(())
 }
