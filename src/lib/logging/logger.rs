@@ -1,4 +1,4 @@
-use std::sync::{Arc, LockResult, Mutex};
+use std::sync::{Arc, Mutex};
 use super::severity::Severity;
 
 #[derive(Copy, Clone)]

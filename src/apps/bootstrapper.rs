@@ -2,7 +2,7 @@ use std::{
     net::{TcpListener, TcpStream},
     fs,
     io::Read,
-    thread, sync::{Mutex, Arc},
+    thread,
 };
 
 use lib::{
@@ -59,13 +59,31 @@ fn main() -> Result<(),()> {
         }
     };
 
-    let local_port = listener.local_addr().unwrap().port();
+    let local_port = match listener.local_addr() {
+        Ok(addr) => addr.port(),
+        Err(err) => {
+            logger.log_error(err.to_string()).expect("Log error");
+            return Err(())
+        }
+    };
     logger.log_info(format!("Bootstrap server ready! Listening on port {local_port}..."))
         .expect("Log info");
     
     for con in listener.incoming() {
-        let stream = con.unwrap();
-        let peer_addr = stream.peer_addr().unwrap();
+        let stream = match con {
+            Ok(stream) => stream,
+            Err(err) => {
+                logger.log_error(err.to_string()).expect("Log error");
+                continue
+            }
+        };
+        let peer_addr = match stream.peer_addr() {
+            Ok(addr) => addr,
+            Err(err) => {
+                logger.log_error(err.to_string()).expect("Log error");
+                continue
+            }
+        };
         let copy = file_content.clone();
         let logger_cpy = logger.clone();
 
