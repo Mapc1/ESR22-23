@@ -47,7 +47,7 @@ impl Logger {
         }
         Ok(())
     }
-    
+
     pub fn log_dbg(&self, msg: String) -> Result<(), String> {
         let debug = match self.logger.lock() {
             Ok(settings) => settings.debug,

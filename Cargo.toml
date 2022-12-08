@@ -13,6 +13,10 @@ path = "src/apps/bootstrapper.rs"
 name = "oNode"
 path = "src/apps/oNode.rs"
 
+[[bin]]
+name = "server"
+path = "src/apps/server.rs"
+
 [lib]
 name = "lib"
 path = "src/lib/lib.rs"
@@ -20,3 +24,5 @@ crate-type = ["lib"]
 
 [dependencies]
 regex = "1.7.0"
+serde = { version = "1.0", features = ["derive"] }
+rmp-serde = "1.1.1"
