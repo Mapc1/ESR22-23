@@ -62,16 +62,19 @@ fn main() -> Result<(), ()> {
     logger
         .log_info("Starting listening for connections".to_string())
         .expect("Log info");
+
+    let logger_copy = logger.clone();
     std::thread::spawn(move || match listener() {
         Ok(_) => Ok(()),
         Err(error) => {
-            logger.log_error(error).expect("Log error");
-            logger
-                .log_info("Turning off".to_string())
-                .expect("Log info");
+            logger_copy.log_error(error).expect("Log error");
             Err(())
         }
     });
+
+    logger
+        .log_info("oNode is turning off!".to_string())
+        .expect("Log info");
 
     Ok(())
 }
