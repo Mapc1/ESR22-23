@@ -1,5 +1,5 @@
 use std::net::TcpStream;
-use std::time::SystemTime;
+use std::time::{Duration, SystemTime, SystemTimeError};
 use rmp_serde::{Deserializer, Serializer};
 
 use serde::{Deserialize, Serialize};
@@ -7,10 +7,12 @@ use serde::{Deserialize, Serialize};
 use crate::node::flooding::link::Link;
 use crate::node::packets::packet::Packet;
 
+const TIME_MARGIN:f32 = 0.1;
+
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct FloodPacket {
     source: String,
-    cost: u32,
+    jumps: u32,
     timestamp: SystemTime,
 }
 
@@ -18,7 +20,7 @@ impl FloodPacket {
     pub fn new(source: String, cost: u32, timestamp: SystemTime) -> Self {
         Self {
             source,
-            cost,
+            jumps: cost,
             timestamp,
         }
     }
@@ -47,16 +49,33 @@ impl FloodPacket {
 
 impl Packet for FloodPacket {
     // FIXME
-    fn handle(&self, mut stream: TcpStream, links: &Vec<Link>) {
+    fn handle(&self, mut stream: TcpStream, links: &mut Vec<Link>) {
         let mut i = 0;
-        /*let link = loop {
-            let l = links.get(i).unwrap();
-            if l.source == self.source {
+        let link = loop {
+            let mut l = links.get_mut(i).unwrap();
+            println!("{}", l.addr);
+            println!("{}", stream.peer_addr().unwrap().ip().to_string());
+            if l.addr == stream.peer_addr().unwrap().ip().to_string() {
                 break l;
             }
             i += 1;
         };
-*/
+
+        let delay = match SystemTime::now().duration_since(self.timestamp) {
+                Ok(delay) => delay,
+                Err(_) => return,
+        };
+
+        if self.jumps < link.jumps && (delay.as_millis() as f32) < (link.delay.as_millis() as f32 * (1.0-TIME_MARGIN)) {
+            link.source = self.source.to_string();
+            link.jumps = self.jumps;
+            link.active = true;
+
+            link.delay = delay;
+        }
+
+        println!("{link:#?}");
+
         println!("{:#?}", self);
     }
 }

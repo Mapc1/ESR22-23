@@ -65,6 +65,7 @@ fn main() -> Result<(), ()> {
         .expect("Log info");
 
     let logger_copy = logger.clone();
+    println!("ola");
     std::thread::spawn(move || match listener() {
         Ok(_) => Ok(()),
         Err(error) => {

@@ -14,7 +14,7 @@ impl RequestPacket {
 }
 
 impl Packet for RequestPacket {
-    fn handle(&self, mut stream: TcpStream, links: &Vec<Link>) {
+    fn handle(&self, mut stream: TcpStream, links: &mut Vec<Link>) {
         todo!()
     }
 }

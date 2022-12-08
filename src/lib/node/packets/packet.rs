@@ -25,7 +25,7 @@ impl PacketType {
         }
     }
 
-    pub fn handle(&self, stream: TcpStream, links: &Vec<Link>) {
+    pub fn handle(&self, stream: TcpStream, links: &mut Vec<Link>) {
         match self {
             PacketType::Flood(packet) => packet.handle(stream, links),
             PacketType::Request(packet) => packet.handle(stream, links),
@@ -35,7 +35,7 @@ impl PacketType {
 }
 
 pub trait Packet {
-    fn handle(&self, stream: TcpStream, links: &Vec<Link>);
+    fn handle(&self, stream: TcpStream, links: &mut Vec<Link>);
 }
 
 // [type, size] -> Data[size]

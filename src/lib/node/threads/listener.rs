@@ -1,5 +1,6 @@
 use std::io::Read;
 use std::net::{TcpListener, TcpStream};
+use std::time::{Duration, SystemTime};
 
 use crate::node::flooding::link::Link;
 use crate::node::packets::packet::PacketType;
@@ -9,7 +10,9 @@ const LISTENER_IP: &Addr = "0.0.0.0";
 const LISTENER_PORT: u16 = 1234;
 
 pub fn listener() -> Result<(), String> {
-    let links: Vec<Link> = Vec::new();
+    let mut links: Vec<Link> = Vec::new();
+
+    links.push(Link::new("10.0.0.10".to_string(), "".to_string(), u32::MAX, Duration::MAX, false, 0, SystemTime::UNIX_EPOCH));
 
     let listener = match TcpListener::bind(format!("{LISTENER_IP}:{LISTENER_PORT}")) {
         Ok(listener) => listener,
@@ -19,7 +22,7 @@ pub fn listener() -> Result<(), String> {
     // accept connections and respond to each packet sent
     for stream in listener.incoming() {
         match stream {
-            Ok(stream) => match handle_packet(stream, &links) {
+            Ok(stream) => match handle_packet(stream, &mut links) {
                 Ok(_) => (),
                 Err(err) => return Err(err),
             },
@@ -29,7 +32,7 @@ pub fn listener() -> Result<(), String> {
     Ok(())
 }
 
-pub fn handle_packet(mut stream: TcpStream, links: &Vec<Link>) -> Result<(), String> {
+pub fn handle_packet(mut stream: TcpStream, links: &mut Vec<Link>) -> Result<(), String> {
     // Packet -> [type: u8, size:u16] 3 bytes -> Data[size]
     let mut buffer = [0; 1500];
 

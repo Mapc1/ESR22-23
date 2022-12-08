@@ -14,7 +14,7 @@ impl AckPacket {
 }
 
 impl Packet for AckPacket {
-    fn handle(&self, mut stream: TcpStream, links: &Vec<Link>) {
+    fn handle(&self, mut stream: TcpStream, links: &mut Vec<Link>) {
         todo!()
     }
 }

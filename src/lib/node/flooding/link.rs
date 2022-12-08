@@ -1,11 +1,11 @@
-use std::time::SystemTime;
+use std::time::{Duration, SystemTime};
 
 #[derive(Debug, Clone)]
 pub struct Link {
     pub addr: String,
     pub source: String,
-    pub cost: u32,
-    pub delay: u32,
+    pub jumps: u32,
+    pub delay: Duration,
     pub active: bool,
     pub times_down: u8,
     pub last_down: SystemTime,
@@ -15,8 +15,8 @@ impl Link {
     pub fn new(
         addr: String,
         source: String,
-        cost: u32,
-        delay: u32,
+        jumps: u32,
+        delay: Duration,
         active: bool,
         times_down: u8,
         last_down: SystemTime,
@@ -24,7 +24,7 @@ impl Link {
         Self {
             addr,
             source,
-            cost,
+            jumps,
             delay,
             active,
             times_down,
