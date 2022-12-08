@@ -38,9 +38,9 @@ pub fn handle_packet(mut stream: TcpStream, links: &Vec<Link>) -> Result<(), Str
         Err(_) => return Err("Error reading from stream".to_string()),
     };
 
-    let packet_size = usize::from_be_bytes(buffer[1..3].try_into().unwrap());
+    let packet_size = u16::from_be_bytes(buffer[1..3].try_into().unwrap());
 
-    let packet = match PacketType::from_u8(buffer[0], buffer[4..packet_size].to_vec()) {
+    let packet = match PacketType::from_u8(buffer[0], buffer[3..packet_size as usize].to_vec()) {
         Some(packet) => packet,
         None => return Err("Invalid packet type".to_string()),
     };

@@ -27,6 +27,7 @@ fn request_file(bootstrapper_addr: &String) -> Result<String, String> {
 fn main() -> Result<(), ()> {
     let logger = Logger::new(INFO, ERROR, DBG);
 
+    /*
     let args: Vec<String> = env::args().collect();
 
     let bootstrapper_addr = match args.get(1) {
@@ -39,7 +40,7 @@ fn main() -> Result<(), ()> {
         }
     };
 
-    /*
+
     logger
         .log_info("Hello! Requesting topology from bootstrap server".to_string())
         .expect("Log info");
@@ -71,6 +72,10 @@ fn main() -> Result<(), ()> {
             Err(())
         }
     });
+
+    loop {
+
+    }
 
     logger
         .log_info("oNode is turning off!".to_string())
