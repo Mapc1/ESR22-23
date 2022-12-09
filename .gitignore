@@ -12,3 +12,9 @@ Cargo.lock
 # VSCode and Jetbrains IDEs config files
 **/.vscode/
 **/.idea/
+
+Server/__pycache__
+Client/__pycache__
+Client/cache-*
+Client/*pyc
+Server/*pyc
