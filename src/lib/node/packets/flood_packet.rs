@@ -5,15 +5,16 @@ use rmp_serde::{Deserializer, Serializer};
 use serde::{Deserialize, Serialize};
 
 use crate::node::flooding::link::Link;
+use crate::node::flooding::routing_table::RoutingTable;
 use crate::node::packets::packet::Packet;
 
 const TIME_MARGIN:f32 = 0.1;
 
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct FloodPacket {
-    source: String,
-    jumps: u32,
-    timestamp: SystemTime,
+    pub source: String,
+    pub jumps: u32,
+    pub timestamp: SystemTime,
 }
 
 impl FloodPacket {
@@ -45,37 +46,23 @@ impl FloodPacket {
 
         Ok(pack_data)
     }
+
+    pub fn from_link(link: &Link) -> Self {
+        Self {
+            source: link.addr.to_string(),
+            jumps: link.jumps + 1,
+            timestamp: SystemTime::now()
+        }
+    }
 }
 
 impl Packet for FloodPacket {
     // FIXME
-    fn handle(&self, mut stream: TcpStream, links: &mut Vec<Link>) {
-        let mut i = 0;
-        let link = loop {
-            let mut l = links.get_mut(i).unwrap();
-            println!("{}", l.addr);
-            println!("{}", stream.peer_addr().unwrap().ip().to_string());
-            if l.addr == stream.peer_addr().unwrap().ip().to_string() {
-                break l;
-            }
-            i += 1;
-        };
+    fn handle(&self, mut stream: TcpStream, table: &mut RoutingTable) -> Result<bool, String> {
+        let peer_addr = stream.peer_addr().unwrap().ip().to_string();
+        let changed = table.handle_flood_packet(peer_addr, self)?;
+        println!("{table:#?}");
 
-        let delay = match SystemTime::now().duration_since(self.timestamp) {
-                Ok(delay) => delay,
-                Err(_) => return,
-        };
-
-        if self.jumps < link.jumps && (delay.as_millis() as f32) < (link.delay.as_millis() as f32 * (1.0-TIME_MARGIN)) {
-            link.source = self.source.to_string();
-            link.jumps = self.jumps;
-            link.active = true;
-
-            link.delay = delay;
-        }
-
-        println!("{link:#?}");
-
-        println!("{:#?}", self);
+        Ok(changed)
     }
 }

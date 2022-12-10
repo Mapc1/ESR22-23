@@ -31,4 +31,16 @@ impl Link {
             last_down,
         }
     }
+
+    pub fn new_default<S: Into<String>>(addr: S) -> Self {
+        Self {
+            addr: addr.into(),
+            source: "empty".to_string(),
+            jumps: u32::MAX,
+            delay: Duration::MAX,
+            active: false,
+            times_down: 0,
+            last_down: SystemTime::UNIX_EPOCH
+        }
+    }
 }

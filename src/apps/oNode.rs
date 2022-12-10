@@ -5,6 +5,7 @@ use std::{env, net::TcpStream};
 use lib::{
     http::connection::get_request, logging::logger::Logger, node::threads::listener::listener,
 };
+use lib::node::flooding::routing_table::RoutingTable;
 
 static INFO: bool = true;
 static ERROR: bool = true;
@@ -27,19 +28,26 @@ fn request_file(bootstrapper_addr: &String) -> Result<String, String> {
 fn main() -> Result<(), ()> {
     let logger = Logger::new(INFO, ERROR, DBG);
 
-    /*
     let args: Vec<String> = env::args().collect();
 
     let bootstrapper_addr = match args.get(1) {
         Some(addr) => addr,
         None => {
             logger.log_error(
-                "This program requires the bootstrapper ip address as an argument, but none were given".to_string()
+                "This program requires the bootstrapper ip address as the first argument, but none were given".to_string()
             ).expect("Log error");
             return Err(());
         }
     };
-
+    let own_ip = match args.get(2) {
+        Some(addr) => addr.to_owned(),
+        None => {
+            logger.log_error(
+                "This program requires the machine's own ip as the second argument".to_string()
+            ).expect("Log error");
+            return Err(())
+        }
+    };
 
     logger
         .log_info("Hello! Requesting topology from bootstrap server".to_string())
@@ -57,7 +65,11 @@ fn main() -> Result<(), ()> {
     logger
         .log_dbg(format!("File received: {file:#?}"))
         .expect("Log debug");
-     */
+
+    let mut table = match RoutingTable::from_file(file, own_ip) {
+        Ok(table) => table,
+        Err(err) => return Err(())
+    };
 
     // Creating the needed threads
     logger
@@ -65,8 +77,7 @@ fn main() -> Result<(), ()> {
         .expect("Log info");
 
     let logger_copy = logger.clone();
-    println!("ola");
-    std::thread::spawn(move || match listener() {
+    std::thread::spawn(move || match listener(&mut table) {
         Ok(_) => Ok(()),
         Err(error) => {
             logger_copy.log_error(error).expect("Log error");

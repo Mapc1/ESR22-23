@@ -3,6 +3,7 @@ use crate::node::packets::ack_packet::AckPacket;
 use crate::node::packets::flood_packet::FloodPacket;
 use crate::node::packets::request_packet::RequestPacket;
 use std::net::TcpStream;
+use crate::node::flooding::routing_table::RoutingTable;
 
 #[derive(Debug)]
 pub enum PacketType {
@@ -25,17 +26,17 @@ impl PacketType {
         }
     }
 
-    pub fn handle(&self, stream: TcpStream, links: &mut Vec<Link>) {
+    pub fn handle(&self, stream: TcpStream, table: &mut RoutingTable) -> Result<bool, String> {
         match self {
-            PacketType::Flood(packet) => packet.handle(stream, links),
-            PacketType::Request(packet) => packet.handle(stream, links),
-            PacketType::Ack(packet) => packet.handle(stream, links),
+            PacketType::Flood(packet) => packet.handle(stream, table),
+            PacketType::Request(packet) => packet.handle(stream, table),
+            PacketType::Ack(packet) => packet.handle(stream, table),
         }
     }
 }
 
 pub trait Packet {
-    fn handle(&self, stream: TcpStream, links: &mut Vec<Link>);
+    fn handle(&self, stream: TcpStream, table: &mut RoutingTable) -> Result<bool, String>;
 }
 
 // [type, size] -> Data[size]

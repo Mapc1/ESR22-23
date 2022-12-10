@@ -1,19 +1,17 @@
-use std::io::Read;
+use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::time::{Duration, SystemTime};
 
 use crate::node::flooding::link::Link;
+use crate::node::flooding::routing_table::RoutingTable;
+use crate::node::packets::flood_packet::FloodPacket;
 use crate::node::packets::packet::PacketType;
 use crate::types::networking::Addr;
 
 const LISTENER_IP: &Addr = "0.0.0.0";
 const LISTENER_PORT: u16 = 1234;
 
-pub fn listener() -> Result<(), String> {
-    let mut links: Vec<Link> = Vec::new();
-
-    links.push(Link::new("10.0.0.10".to_string(), "".to_string(), u32::MAX, Duration::MAX, false, 0, SystemTime::UNIX_EPOCH));
-
+pub fn listener(table: &mut RoutingTable) -> Result<(), String> {
     let listener = match TcpListener::bind(format!("{LISTENER_IP}:{LISTENER_PORT}")) {
         Ok(listener) => listener,
         Err(_) => return Err("Error binding listener".to_string()),
@@ -22,7 +20,7 @@ pub fn listener() -> Result<(), String> {
     // accept connections and respond to each packet sent
     for stream in listener.incoming() {
         match stream {
-            Ok(stream) => match handle_packet(stream, &mut links) {
+            Ok(stream) => match handle_packet(stream, table) {
                 Ok(_) => (),
                 Err(err) => return Err(err),
             },
@@ -32,7 +30,7 @@ pub fn listener() -> Result<(), String> {
     Ok(())
 }
 
-pub fn handle_packet(mut stream: TcpStream, links: &mut Vec<Link>) -> Result<(), String> {
+pub fn handle_packet(mut stream: TcpStream, table: &mut RoutingTable) -> Result<(), String> {
     // Packet -> [type: u8, size:u16] 3 bytes -> Data[size]
     let mut buffer = [0; 1500];
 
@@ -50,7 +48,21 @@ pub fn handle_packet(mut stream: TcpStream, links: &mut Vec<Link>) -> Result<(),
 
     println!("Packet: {packet:?}");
 
-    packet.handle(stream, links);
+    let changed = packet.handle(stream, table)?;
+
+    if changed {
+        let flood_pack = FloodPacket::from_link(&table.closest_link);
+
+        for l in table.links.iter() {
+            if l.addr == table.closest_link.addr {
+                continue
+            }
+
+            println!("Sending flood to {}", l.addr);
+            let mut stream = TcpStream::connect(format!("{}:{}", l.addr.clone(), LISTENER_PORT)).unwrap();
+            stream.write(flood_pack.to_bytes().unwrap().as_ref()).unwrap();
+        }
+    }
 
     // ...
 
