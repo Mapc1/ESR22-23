@@ -92,6 +92,7 @@ impl RoutingTable {
     pub fn has_active_links(&self) -> bool {
         self.num_links_active > 0
     }
+
     fn get_active_links(&self) -> Vec<Link> {
         let mut active_links: Vec<Link> = Vec::new();
         for l in self.links.iter() {
@@ -112,7 +113,6 @@ impl RoutingTable {
                     return Err("Packet is already receiving the stream...".to_string());
                 }
                 l.active = true;
-                found = true;
 
                 return Ok(true); // FIXME: Returns hardcoded boolean for now
             }
@@ -137,9 +137,9 @@ impl RoutingTable {
         });
 
         if found {
-            Ok()
+            Ok(())
         } else {
-            Err("Link not found".to_string())
+            Err("Node wasn't receiving the stream...".to_string())
         }
     }
 }

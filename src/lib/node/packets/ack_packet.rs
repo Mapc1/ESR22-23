@@ -1,8 +1,8 @@
-use crate::node::flooding::link::Link;
-use serde::{Deserialize, Serialize};
 use std::net::TcpStream;
-use crate::node::flooding::routing_table::RoutingTable;
 
+use serde::{Deserialize, Serialize};
+
+use crate::node::flooding::routing_table::RoutingTable;
 use crate::node::packets::packet::Packet;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -15,7 +15,11 @@ impl AckPacket {
 }
 
 impl Packet for AckPacket {
-    fn handle(&self, mut stream: TcpStream, links: &mut RoutingTable) -> Result<bool, String>{
+    fn get_type(&self) -> u8 {
+        2
+    }
+
+    fn handle(&self, _stream: TcpStream, _links: &mut RoutingTable) -> Result<bool, String> {
         todo!()
     }
 }

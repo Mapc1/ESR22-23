@@ -70,7 +70,7 @@ fn main() -> Result<(), ()> {
 
     let mut table = match RoutingTable::from_file(file, own_ip) {
         Ok(table) => table,
-        Err(err) => return Err(()),
+        Err(_) => return Err(()),
     };
 
     // Creating the needed threads
@@ -87,8 +87,6 @@ fn main() -> Result<(), ()> {
             Err(())
         }
     });
-
-    loop {}
 
     logger
         .log_info("oNode is turning off!".to_string())

@@ -2,7 +2,6 @@ use std::net::TcpStream;
 
 use serde::{Deserialize, Serialize};
 
-use crate::node::flooding::link::Link;
 use crate::node::flooding::routing_table::RoutingTable;
 use crate::node::packets::packet::Packet;
 use crate::node::packets::utils::get_peer_addr;
@@ -17,7 +16,11 @@ impl RequestPacket {
 }
 
 impl Packet for RequestPacket {
-    fn handle(&self, mut stream: TcpStream, table: &mut RoutingTable) -> Result<bool, String> {
+    fn get_type(&self) -> u8 {
+        1
+    }
+
+    fn handle(&self, stream: TcpStream, table: &mut RoutingTable) -> Result<bool, String> {
         return match table.handle_request_packet(get_peer_addr(stream)) {
             Ok(_) => Ok(false),
             Err(e) => Err(e),

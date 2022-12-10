@@ -1,6 +1,5 @@
 use std::net::TcpStream;
-use std::time::{Duration, SystemTime, SystemTimeError};
-use rmp_serde::{Deserializer, Serializer};
+use std::time::SystemTime;
 
 use serde::{Deserialize, Serialize};
 
@@ -8,7 +7,7 @@ use crate::node::flooding::link::Link;
 use crate::node::flooding::routing_table::RoutingTable;
 use crate::node::packets::packet::Packet;
 
-const TIME_MARGIN:f32 = 0.1;
+const TIME_MARGIN: f32 = 0.1;
 
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct FloodPacket {
@@ -51,14 +50,18 @@ impl FloodPacket {
         Self {
             source: link.addr.to_string(),
             jumps: link.jumps + 1,
-            timestamp: SystemTime::now()
+            timestamp: SystemTime::now(),
         }
     }
 }
 
 impl Packet for FloodPacket {
+    fn get_type(&self) -> u8 {
+        0
+    }
+
     // FIXME
-    fn handle(&self, mut stream: TcpStream, table: &mut RoutingTable) -> Result<bool, String> {
+    fn handle(&self, stream: TcpStream, table: &mut RoutingTable) -> Result<bool, String> {
         let peer_addr = stream.peer_addr().unwrap().ip().to_string();
         let changed = table.handle_flood_packet(peer_addr, self)?;
         println!("{table:#?}");
