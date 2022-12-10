@@ -1,9 +1,9 @@
 use crate::node::flooding::link::Link;
+use crate::node::flooding::routing_table::RoutingTable;
 use crate::node::packets::ack_packet::AckPacket;
 use crate::node::packets::flood_packet::FloodPacket;
 use crate::node::packets::request_packet::RequestPacket;
 use std::net::TcpStream;
-use crate::node::flooding::routing_table::RoutingTable;
 
 #[derive(Debug)]
 pub enum PacketType {
@@ -39,4 +39,4 @@ pub trait Packet {
     fn handle(&self, stream: TcpStream, table: &mut RoutingTable) -> Result<bool, String>;
 }
 
-// [type, size] -> Data[size]
+// [type u8, size  u16] -> Data[size] u8[size]

@@ -2,10 +2,10 @@
 
 use std::{env, net::TcpStream};
 
+use lib::node::flooding::routing_table::RoutingTable;
 use lib::{
     http::connection::get_request, logging::logger::Logger, node::threads::listener::listener,
 };
-use lib::node::flooding::routing_table::RoutingTable;
 
 static INFO: bool = true;
 static ERROR: bool = true;
@@ -42,10 +42,12 @@ fn main() -> Result<(), ()> {
     let own_ip = match args.get(2) {
         Some(addr) => addr.to_owned(),
         None => {
-            logger.log_error(
-                "This program requires the machine's own ip as the second argument".to_string()
-            ).expect("Log error");
-            return Err(())
+            logger
+                .log_error(
+                    "This program requires the machine's own ip as the second argument".to_string(),
+                )
+                .expect("Log error");
+            return Err(());
         }
     };
 
@@ -68,7 +70,7 @@ fn main() -> Result<(), ()> {
 
     let mut table = match RoutingTable::from_file(file, own_ip) {
         Ok(table) => table,
-        Err(err) => return Err(())
+        Err(err) => return Err(()),
     };
 
     // Creating the needed threads
@@ -77,6 +79,7 @@ fn main() -> Result<(), ()> {
         .expect("Log info");
 
     let logger_copy = logger.clone();
+
     std::thread::spawn(move || match listener(&mut table) {
         Ok(_) => Ok(()),
         Err(error) => {
@@ -85,9 +88,7 @@ fn main() -> Result<(), ()> {
         }
     });
 
-    loop {
-
-    }
+    loop {}
 
     logger
         .log_info("oNode is turning off!".to_string())
