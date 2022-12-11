@@ -12,18 +12,21 @@ use crate::types::networking::Addr;
 
 const LISTENER_IP: &Addr = "0.0.0.0";
 pub const LISTENER_PORT: u16 = 1234;
+const MAX_BUFF_SIZE: usize = 65000;
 
 pub fn udp_listener(table: &mut Arc<RwLock<RoutingTable>>) -> Result<(), String> {
     let socket = match UdpSocket::bind(format!("{LISTENER_IP}:{LISTENER_PORT}")) {
         Ok(socket) => socket,
         Err(err) => return Err(err.to_string()),
     };
+    
+    let mut buf: [u8; MAX_BUFF_SIZE] = [0; MAX_BUFF_SIZE];
     loop {
-        let mut buf: [u8; 1500] = [0; 1500];
         let (_, addr) = socket.recv_from(&mut buf).unwrap();
 
-        let pack_size = u16::from_be_bytes(buf[1..3].try_into().unwrap());
-        let mut pack = StreamPacket::from_bytes_packet_type(buf[3..pack_size as usize].to_vec());
+        let pack_size = u16::from_be_bytes(buf[0..2].try_into().unwrap());
+        println!("{pack_size} | {}", buf[5]);
+        let mut pack = StreamPacket::from_bytes_packet_type(buf[2..pack_size as usize].to_vec());
 
         pack.handle(&socket, addr.ip().to_string(), table)?;
     }
@@ -75,7 +78,7 @@ pub fn handle_packet(mut stream: TcpStream, table: &mut Arc<RwLock<RoutingTable>
                 continue
             }
 
-            println!("Sending flood to {}", l.addr);
+            //println!("Sending flood to {}", l.addr);
             let mut stream =
                 TcpStream::connect(format!("{}:{}", l.addr.clone(), LISTENER_PORT)).unwrap();
             stream

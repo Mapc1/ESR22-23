@@ -30,7 +30,7 @@ impl RefusePacket {
 
 impl Packet for RefusePacket {
     fn get_type(&self) -> u8 {
-        4
+        3
     }
 
     /*

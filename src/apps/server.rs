@@ -30,7 +30,7 @@ fn main() {
     // Create Flood Packet and send to the neighbor_addr
     let packet = FloodPacket::new(my_addr.to_string(), 0, std::time::SystemTime::now());
 
-    println!("Sending packet: {packet:#?}");
+    //println!("Sending packet: {packet:#?}");
 
     match packet.to_bytes() {
         Ok(bytes) => {
@@ -42,7 +42,7 @@ fn main() {
         }
     }
 
-    println!("Sending stream");
+    //println!("Sending stream");
     let mut stream_pack = StreamPacket::new("vagina".as_bytes().to_vec());
     thread::sleep(Duration::from_secs(2));
     let udp_stream = UdpSocket::bind(format!("0.0.0.0:1234")).unwrap();
@@ -55,5 +55,4 @@ fn main() {
             return;
         }
     }
-
 }

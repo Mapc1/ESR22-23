@@ -36,8 +36,9 @@ class ServerWorker:
 	def run(self):
 		threading.Thread(target=self.sendRtp).start()
 	
+	"""
 	def recvRtspRequest(self):
-		"""Receive RTSP request from the client."""		
+		Receive RTSP request from the client.	
 
 		connSocket = self.clientInfo['rtspSocket'][0]
 		while True:            
@@ -45,6 +46,7 @@ class ServerWorker:
 			if data:
 				#print("Data received:\n" + data.decode("utf-8"))
 				self.processRtspRequest(data)
+	"""
 	
 	def processRtspRequest(self, data):
 		"""Process RTSP request sent from the client."""
@@ -73,7 +75,7 @@ class ServerWorker:
 					print("Error in payload or in video Stream\n")
 				
 				# Generate a randomized RTSP session ID
-				self.clientInfo['session'] = randint(100000, 999999)
+				# self.clientInfo['session'] = randint(100000, 999999)
 				
 				# Send RTSP reply
 				# self.replyRtsp(self.OK_200, seq)
@@ -127,14 +129,14 @@ class ServerWorker:
 		"""Send RTP packets over UDP."""
 		print("Sending UDPs")
 		while True:
-			
+			True
 			data = self.clientInfo['videoStream'].nextFrame()
 			time.sleep(0.06)
 			
 			# Stop sending if request is PAUSE or TEARDOWN
 			# Ele só deve enviar quando tem clientes, mas continua a "reproduzir" o vídeo
 			if not self.clientInfo['active_clients']:
-				# print("\nNot sending\n")			
+				#print("\nNot sending\n")			
 				pass
 
 			else:	
@@ -143,8 +145,9 @@ class ServerWorker:
 					self.true_frameNumber = self.current_frameNumber + self.last_frame
 					
 					try:
-						address = self.clientInfo['rtspSocket'][1][0]
+						address = self.clientInfo['address']
 						port = int(self.clientInfo['rtpPort'])
+						print(f'sending {len(data)} seq {self.true_frameNumber}...')
 						self.clientInfo['rtpSocket'].sendto(self.makeRtp(data, self.true_frameNumber),(address,port))
 					except:
 						print("Connection Error")

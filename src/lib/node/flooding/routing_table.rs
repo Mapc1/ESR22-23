@@ -62,10 +62,7 @@ impl RoutingTable {
             }
         };
 
-        let delay = match SystemTime::now().duration_since(packet.timestamp) {
-            Ok(delay) => delay,
-            Err(err) => return Err(err.to_string()),
-        };
+        let delay = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis() as u64 - packet.timestamp;
 
         link.source = packet.source.to_string();
         link.jumps = packet.jumps;
@@ -113,7 +110,7 @@ impl RoutingTable {
             if l.addr == peer_addr {
                 println!("request from {}", l.addr);
                 if l.active {
-                    return Err("Packet is already receiving the stream...".to_string());
+                    return Err("Link is already receiving the stream...".to_string());
                 }
                 l.active = true;
                 l.has_clients = true;

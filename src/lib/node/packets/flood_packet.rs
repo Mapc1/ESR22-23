@@ -2,7 +2,7 @@ use std::net::TcpStream;
 use std::sync::{Arc, RwLock};
 use std::time::SystemTime;
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Deserializer};
 
 use crate::node::flooding::link::Link;
 use crate::node::flooding::routing_table::RoutingTable;
@@ -14,7 +14,7 @@ const TIME_MARGIN: f32 = 0.1;
 pub struct FloodPacket {
     pub source: String,
     pub jumps: u32,
-    pub timestamp: SystemTime,
+    pub timestamp: u64,
 }
 
 impl FloodPacket {
@@ -22,7 +22,7 @@ impl FloodPacket {
         Self {
             source,
             jumps: cost,
-            timestamp,
+            timestamp: timestamp.duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis() as u64,
         }
     }
 
@@ -51,7 +51,7 @@ impl FloodPacket {
         Self {
             source: link.addr.to_string(),
             jumps: link.jumps + 1,
-            timestamp: SystemTime::now(),
+            timestamp: SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis() as u64,
         }
     }
 }

@@ -1,3 +1,4 @@
+from math import floor
 import sys, socket, requests, msgpack, threading
 from VideoStream import VideoStream
 import time
@@ -42,57 +43,58 @@ class Server:
 		print(self.topologia)
 		return self.topologia
 
-	def flood(self,SERVER_ADDRESS):
-		
-		clientInfo = {}
-
+	def flood(self,SERVER_ADDRESS, video_file):
 		vizinhos = self.topologia[SERVER_ADDRESS]
 
 		payload = {"source": SERVER_ADDRESS,
-				  "jumps": 1,
-				  "timestamp": time.time()
+				  "jumps": 0,
+				  "timestamp": int(time.time()*1000)
 				  }
-		size = sys.getsizeof(payload)
 		packet = bytearray([])
 		packet.append(0)
-		packet += size.to_bytes(4,'big')
-		print(type(packet + msgpack.packb(payload, use_bin_type=True)))
+		pack_data = msgpack.packb(payload, use_bin_type=True)
+
+		size = len(pack_data) + 3
+		packet += size.to_bytes(2,'big')
+		packet += pack_data
 
 		for vizinho in vizinhos:
-			clientInfo[vizinho] = {}
+			self.clientInfo[vizinho] = {}
+			self.clientInfo[vizinho]['videoStream'] = VideoStream(self.VIDEO_PATH + video_file)
+			self.clientInfo[vizinho]['state'] = self.READY
+			self.clientInfo[vizinho]['active_clients'] = False
+			self.clientInfo[vizinho]['address'] = vizinho
+			self.clientInfo[vizinho]['rtpPort'] = self.RTP_PORT
 			s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-			self.vizinhos_ip.append(s)
 			try:
 				s.connect((vizinho, self.NODE_PORT))
-				s.send(packet + msgpack.packb(payload, use_bin_type=True))
+				s.send(packet)
 			except:
 				print(f"Connection to {vizinho} failed\n")		
-
-		return clientInfo
 
 	def processRtspRequest(self, data, addr):
 		"""Process RTSP request sent from the client."""
 		# Get the request type
 		# request = data.split(' ')
 		# requestType = request[0]
-		requestType = int.from_bytes(data[0],'big')
-		size = int.from_bytes(data[1:5],'big')
+		requestType = int.from_bytes([data[0]],'big')
+		size = int.from_bytes(data[1:3],'big')
 
 		# Get the RTSP sequence number
 		# seq = request[1]
-		
+		print(self.clientInfo)
 		# Process SETUP request
 		if requestType == self.SETUP:
-			if self.clientInfo['state'] == self.INIT:
+			if self.clientInfo[addr]['state'] == self.INIT:
 
 				# Update state
 				print("processing SETUP\n")
 
 				try:
-					payload = msgpack.unpackb(data[5:size+5], raw=False)
+					payload = msgpack.unpackb(data[3:size], raw=False)
 					print(payload)
 					self.clientInfo[addr]['videoStream'] = VideoStream(self.VIDEO_PATH + self.video_file)
-					self.clientInfo['state'] = self.READY
+					self.clientInfo[addr]['state'] = self.READY
 				except:
 					print("Error in payload or in video Stream\n")
 				
@@ -108,10 +110,10 @@ class Server:
 		
 		# Process PLAY request 		
 		elif requestType == self.PLAY:
-			if self.clientInfo['state'] == self.READY:
+			if self.clientInfo[addr]['state'] == self.READY:
 				self.clientInfo[addr]['active_clients'] = True
 				print("processing PLAY\n")
-				self.clientInfo['state'] = self.PLAYING
+				self.clientInfo[addr]['state'] = self.PLAYING
 				
 				# Create a new socket for RTP/UDP
 				self.clientInfo[addr]["rtpSocket"] = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -120,8 +122,8 @@ class Server:
 				
 				# Create a new thread and start sending RTP packets
 				# self.clientInfo['event'] = threading.Event()
-				self.clientInfo[addr]['worker']= threading.Thread(target=self.sendRtp) 
-				self.clientInfo[addr]['worker'].start()
+				#self.clientInfo[addr]['worker']= threading.Thread(target=self.worker_list[addr].sendRtp) 
+				#self.clientInfo[addr]['worker'].start()
 		
 		# Process TEARDOWN request
 		elif requestType == self.TEARDOWN:
@@ -146,20 +148,18 @@ class Server:
 			print("[Usage: Server.py Server_port Video_file SERVER_ADDRESS]\n")
 		
 		self.read_bootstrapper()
-		clientInfo = self.flood(SERVER_ADDRESS)
+		self.flood(SERVER_ADDRESS, video_file)
 
-		for vizinho in self.vizinhos_ip:
-			print(clientInfo[vizinho])
-			ServerWorker(clientInfo[vizinho],video_file).run()
-
+		for vizinho in self.topologia[SERVER_ADDRESS]:
+			ServerWorker(self.clientInfo[vizinho],video_file).run()
 
 		rtspSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		rtspSocket.bind(('', SERVER_PORT))
 		rtspSocket.listen(5)
 
 		while True:
-			addr,port = rtspSocket.accept()
-			data = rtspSocket.recv(1500)
+			sock,(addr,_) = rtspSocket.accept()
+			data = sock.recv(1500)
 			self.processRtspRequest(data,addr)
 
 

@@ -15,7 +15,7 @@ class Client:
     INIT = 0
     READY = 1
     PLAYING = 2
-    state = INIT
+    state = READY
     
     # Requests
     SETUP = 0
@@ -91,10 +91,10 @@ class Client:
         
         if self.state == self.READY:
             # Create a new thread to listen for RTP packets
+            self.sendRtspRequest(self.PLAY)
             threading.Thread(target=self.listenRtp).start()
             self.playEvent = threading.Event()
             self.playEvent.clear()
-            self.sendRtspRequest(self.PLAY)
             # self.listenForPings()
     
     def listenRtp(self):		
@@ -102,6 +102,7 @@ class Client:
         while True:
             try:
                 data = self.rtpSocket.recv(20480)
+                print(len(data))
                 
                 if data:
                     rtpPacket = RtpPacket()
@@ -112,7 +113,6 @@ class Client:
                     if currFrameNbr > self.frameNbr: # Discard the late packet
                         self.frameNbr = currFrameNbr
                         self.updateMovie(self.writeFrame(rtpPacket.getPayload()))
-
             except:
                 # Stop listening upon requesting PAUSE or TEARDOWN
                 if self.playEvent.isSet(): 
@@ -185,8 +185,8 @@ class Client:
             #request += 'PLAY'
             #request += ' ' + str(self.rtspSeq)
             request.append(self.PLAY)
-            size = 0
-            request += size.to_bytes(4, 'big')
+            size = 3
+            request += size.to_bytes(2, 'big')
             
             # Keep track of the sent request.
             self.requestSent = self.PLAY
@@ -238,8 +238,6 @@ class Client:
         # Send the RTSP request using rtspSocket.
         self.rtspSocket.send(request)
         
-        print('\nData sent:\n' + request)
-    
     def recvRtspReply(self):
         """Receive RTSP reply from the server."""
         while True:

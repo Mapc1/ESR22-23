@@ -34,8 +34,9 @@ class RtpPacket:
 		
 	def decode(self, byteStream):
 		"""Decode the RTP packet."""
-		self.header = bytearray(byteStream[:HEADER_SIZE])
-		self.payload = byteStream[HEADER_SIZE:]
+		pack = byteStream[2:]
+		self.header = bytearray(pack[:HEADER_SIZE])
+		self.payload = pack[HEADER_SIZE:]
 	
 	def version(self):
 		"""Return RTP version."""
@@ -62,7 +63,9 @@ class RtpPacket:
 		
 	def getPacket(self):
 		"""Return RTP packet."""
-		return self.header + self.payload
+		pack_size = len(self.header) + len(self.payload) + 2
+
+		return pack_size.to_bytes(2, 'big') + self.header + self.payload
 
 	def printheader(self):
 		print("[RTP Packet] Version: ...")

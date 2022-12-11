@@ -31,10 +31,10 @@ impl PacketType {
                 bytes,
             ))),
             2 => Some(PacketType::Ack(AckPacket::from_bytes_packet_type(bytes))),
-            3 => Some(PacketType::Stream(StreamPacket::from_bytes_packet_type(bytes))),
-            4 => Some(PacketType::Refuse(RefusePacket::from_bytes_packet_type(
+            3 => Some(PacketType::Refuse(RefusePacket::from_bytes_packet_type(
                 bytes,
             ))),
+            4 => Some(PacketType::Stream(StreamPacket::from_bytes_packet_type(bytes))),
             _ => None,
         }
     }
