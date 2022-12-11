@@ -32,21 +32,6 @@ impl PacketType {
         }
     }
 
-    fn to_bytes(packet: &dyn Packet) -> Result<Vec<u8>, String> {
-        let pack_type: u8 = packet.get_type(); // FIXME
-        let mut data = match rmp_serde::to_vec(packet) {
-            Ok(vec) => vec,
-            Err(err) => return Err(err.to_string()),
-        };
-        let mut size = (data.len() as u16 + 3).to_be_bytes().to_vec();
-
-        let mut pack_data = vec![pack_type];
-        pack_data.append(&mut size);
-        pack_data.append(&mut data);
-
-        Ok(pack_data)
-    }
-
     pub fn handle(&self, stream: TcpStream, table: &mut RoutingTable) -> Result<bool, String> {
         match self {
             PacketType::Flood(packet) => packet.handle(stream, table),
@@ -55,16 +40,28 @@ impl PacketType {
             PacketType::Refuse(packet) => packet.handle(stream, table),
         }
     }
+}
 
-    pub fn send_packet(packet: Box<dyn Packet>, peer_addr: String) -> Result<(), String> {
-        return match packet.to_bytes() {
-            Ok(bytes) => {
-                let mut stream = TcpStream::connect(peer_addr).expect("Failed to connect");
-                stream.write_all(&bytes).expect("Failed to write");
-                Ok(())
-            }
-            Err(err) => Err(err),
+impl dyn Packet {
+    fn serialize(packet: FloodPacket) -> Result<Vec<u8>, String> {
+        let packet_type: u8 = packet.get_type(); // FIXME
+        let mut data = match rmp_serde::to_vec(&packet) {
+            Ok(vec) => vec,
+            Err(err) => return Err(err.to_string()),
         };
+        let mut size = (data.len() as u16 + 3).to_be_bytes().to_vec();
+
+        let mut serialized_packet = vec![packet_type];
+        serialized_packet.append(&mut size);
+        serialized_packet.append(&mut data);
+
+        Ok(serialized_packet)
+    }
+
+    pub fn send_packet(packet: Vec<u8>, peer_addr: String) -> Result<(), String> {
+        let mut stream = TcpStream::connect(peer_addr).expect("Failed to connect");
+        stream.write_all(&packet).expect("Failed to write");
+        Ok(())
     }
 }
 

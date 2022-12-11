@@ -10,7 +10,7 @@ const TIME_MARGIN: f32 = 0.10;
 pub struct RoutingTable {
     pub links: Vec<Link>,
     pub closest_link: Link,
-    pub num_links_active: u32,
+    pub num_active_clients: u32,
 }
 
 impl RoutingTable {
@@ -18,7 +18,7 @@ impl RoutingTable {
         let mut table = Self {
             closest_link: Link::new_default("dummy"),
             links,
-            num_links_active: 0,
+            num_active_clients: 0,
         };
         table.calc_closest_link();
         table
@@ -90,7 +90,7 @@ impl RoutingTable {
     }
 
     pub fn has_active_links(&self) -> bool {
-        self.num_links_active > 0
+        self.num_active_clients > 0
     }
 
     fn get_active_links(&self) -> Vec<Link> {
@@ -131,7 +131,7 @@ impl RoutingTable {
         self.links.iter_mut().for_each(|l| {
             if l.addr == peer_addr {
                 l.active = false;
-                self.num_links_active -= 1;
+                self.num_active_clients -= 1;
                 found = true;
             }
         });

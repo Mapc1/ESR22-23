@@ -1,8 +1,11 @@
 #![allow(non_snake_case)]
 
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::time::Duration;
 use std::{env, net::TcpStream};
 
 use lib::node::flooding::routing_table::RoutingTable;
+use lib::node::packets::utils::connect;
 use lib::{
     http::connection::get_request, logging::logger::Logger, node::threads::listener::listener,
 };
@@ -11,10 +14,16 @@ static INFO: bool = true;
 static ERROR: bool = true;
 static DBG: bool = true;
 
+static TIMEOUT: Duration = Duration::new(5, 0);
+
+static RETRY_TIMES: u32 = 5;
+
 fn request_file(bootstrapper_addr: &String) -> Result<String, String> {
-    let mut stream = match TcpStream::connect(bootstrapper_addr) {
+    let socket_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(10, 0, 0, 10)), 8080);
+
+    let mut stream = match connect(&"".to_string()) {
         Ok(stream) => stream,
-        Err(_) => return Err("Error connecting to server. Perhaps it's down?".to_string()),
+        Err(e) => return Err(e),
     };
 
     let body = match get_request(&mut stream, "Olá ^.^") {
@@ -87,6 +96,8 @@ fn main() -> Result<(), ()> {
             Err(())
         }
     });
+
+    loop {}
 
     logger
         .log_info("oNode is turning off!".to_string())
