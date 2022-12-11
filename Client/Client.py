@@ -1,4 +1,5 @@
 from tkinter import *
+from random import randint
 import tkinter.messagebox
 from PIL import Image, ImageTk
 import socket, threading, sys, traceback, os
@@ -21,6 +22,12 @@ class Client:
     PLAY = 1
     PAUSE = 2
     TEARDOWN = 3
+
+    # New Requests
+    # FLOODING = 0
+    # PLAY = 1
+    ACK = 2
+    #TEARDOWN = 3
     
     # Initiation..
     def __init__(self, master, serveraddr, serverport, rtpport, pingPort):
@@ -32,7 +39,7 @@ class Client:
         self.rtpPort = int(rtpport)
         self.pingPort = int(pingPort)
         self.rtspSeq = 0
-        self.sessionId = 0
+        self.sessionId = randint(100000, 999999)
         self.requestSent = -1
         self.teardownAcked = 0
         self.connectToServer()
@@ -40,11 +47,6 @@ class Client:
         
     def createWidgets(self):
         """Build GUI."""
-        # Create Setup button
-        #self.setup = Button(self.master, width=20, padx=3, pady=3)
-        #self.setup["text"] = "Setup"
-        #self.setup["command"] = self.setupMovie
-        #self.setup.grid(row=1, column=0, padx=2, pady=2)
         
         # Create Play button		
         self.start = Button(self.master, width=20, padx=3, pady=3)
@@ -53,10 +55,10 @@ class Client:
         self.start.grid(row=1, column=1, padx=2, pady=2)
         
         # Create Pause button			
-        self.pause = Button(self.master, width=20, padx=3, pady=3)
-        self.pause["text"] = "Pause"
-        self.pause["command"] = self.pauseMovie
-        self.pause.grid(row=1, column=2, padx=2, pady=2)
+        # self.pause = Button(self.master, width=20, padx=3, pady=3)
+        # self.pause["text"] = "Pause"
+        # self.pause["command"] = self.pauseMovie
+        # self.pause.grid(row=1, column=2, padx=2, pady=2)
         
         # Create Teardown button
         self.teardown = Button(self.master, width=20, padx=3, pady=3)
@@ -146,79 +148,95 @@ class Client:
         except:
             tkinter.messagebox.messagebox.showwarning('Connection Failed', 'Connection to \'%s\' failed.' %self.serverAddr)
 
-        self.setupMovie()
+        # self.setupMovie()
         
     
     def sendRtspRequest(self, requestCode):
         """Send RTSP request to the server."""	
 
         # Formato de acordo com o serverWorker reply = 'RTSP/1.0 200 OK\nCSeq: ' + seq + '\nSession: ' + str(self.clientInfo['session'])
-        request = ""
+        request = bytearray([])
 
         # Setup request
         if requestCode == self.SETUP and self.state == self.INIT:
-            threading.Thread(target=self.recvRtspReply).start()
+            # threading.Thread(target=self.recvRtspReply).start()
             # Update RTSP sequence number.
-            self.rtspSeq += 1
+            # self.rtspSeq += 1
             
             # Write the RTSP request to be sent.
-            request += 'SETUP'
-            request += ' ' + str(self.rtspSeq)
-            request += ' ' + str(self.rtpPort)
-            request += ' ' + str(self.pingPort)
+            # request += 'SETUP'
+            # request += ' ' + str(self.rtspSeq)
+            # request += ' ' + str(self.rtpPort)
             
+
+
             # Keep track of the sent request.
             self.requestSent = self.SETUP
         
         # Play request
         elif requestCode == self.PLAY and self.state == self.READY:
             
+            # threading.Thread(target=self.recvRtspReply).start()
             # Update RTSP sequence number.
-            self.rtspSeq += 1
+            # self.rtspSeq += 1
             print('\nPLAY event\n')
             
             # Write the RTSP request to be sent.
-            request += 'PLAY'
-            request += ' ' + str(self.rtspSeq)
+            #request += 'PLAY'
+            #request += ' ' + str(self.rtspSeq)
+            request.append(self.PLAY)
+            size = 0
+            request += size.to_bytes(4, 'big')
             
             # Keep track of the sent request.
             self.requestSent = self.PLAY
+            self.state == self.PLAYING
+            self.openRtpPort() 
         
         # Pause request
         elif requestCode == self.PAUSE and self.state == self.PLAYING:
             
             # Update RTSP sequence number.
-            self.rtspSeq += 1
+            # self.rtspSeq += 1
             print('\nPAUSE event\n')
             
             # Write the RTSP request to be sent.
-            request += 'PAUSE'
-            request += ' ' + str(self.rtspSeq)
+            #request += 'PAUSE'
+            #request += ' ' + str(self.rtspSeq)
+            request.append(self.TEARDOWN)
+            size = 0
+            request += size.to_bytes(4, 'big')
             
             # Keep track of the sent request.
+            self.state == self.READY
             self.requestSent = self.PAUSE
             
         # Teardown request
         elif requestCode == self.TEARDOWN and not self.state == self.INIT:
             
             # Update RTSP sequence number.
-            self.rtspSeq += 1
+            #self.rtspSeq += 1
             print('\nTEARDOWN event\n')
             
             # Write the RTSP request to be sent.
-            request += 'TEARDOWN'
-            request += ' ' + str(self.rtspSeq)
+            # request += 'TEARDOWN'
+            # request += ' ' + str(self.rtspSeq)
+            request.append(self.TEARDOWN)
+            size = 0
+            request += size.to_bytes(4, 'big')
+
+            self.playEvent.set()
             
             # Keep track of the sent request.
             self.requestSent = self.TEARDOWN
+            self.teardownAcked = 1
         else:
             # Aqui ainda podemos acrescentar outro tipo de mensagens
             return
 
         
-        
         # Send the RTSP request using rtspSocket.
-        self.rtspSocket.send(bytes(request,'UTF-8'))
+        self.rtspSocket.send(request)
         
         print('\nData sent:\n' + request)
     
@@ -287,7 +305,7 @@ class Client:
         
         try:
             # Bind the socket to the address using the RTP port given by the client user
-            self.rtpSocket.bind(("127.0.0.1",self.rtpPort)) # Qual é o ip aqui?
+            self.rtpSocket.bind(("0.0.0.0",self.rtpPort)) # Qual é o ip aqui?
             print('\nBind \n')
         except:
             tkinter.messagebox.messagebox.showwarning('Unable to Bind', 'Unable to bind PORT=%d' %self.rtpPort)
@@ -307,7 +325,7 @@ class Client:
     def listenPings(self):
 
         self.pingSocket = socket.socket(family=socket.AF_INET,type=socket.SOCK_DGRAM)
-        self.pingSocket.bind(("127.0.0.1",self.pingPort))
+        self.pingSocket.bind(("0.0.0.0",self.pingPort))
         self.pingSocket.settimeout(5) # timeout de 5 segundos
         print("\nBind ping socket\n")
         

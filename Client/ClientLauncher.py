@@ -9,7 +9,7 @@ if __name__ == "__main__":
 		rtpPort = sys.argv[3]
 		pingPort = sys.argv[4]
 	except:
-		print("[Usage: ClientLauncher.py Server_name Server_port RTP_port  Ping_Port]\n")	
+		print("[Usage: ClientLauncher.py Server_name Server_port RTP_port Ping_Port]\n")	
 	
 	root = Tk()
 	
