@@ -1,22 +1,26 @@
 #![allow(non_snake_case)]
 
-use std::sync::{Arc, Mutex, RwLock};
-use std::{env, net::TcpStream};
+use std::sync::{Arc, RwLock};
+use std::env;
 
 use lib::node::threads::listener::udp_listener;
+
+use lib::node::flooding::routing_table::RoutingTable;
+use lib::node::packets::utils::connect;
 use lib::{
     http::connection::get_request, logging::logger::Logger, node::threads::listener::listener,
 };
-use lib::node::flooding::routing_table::RoutingTable;
 
 static INFO: bool = true;
 static ERROR: bool = true;
 static DBG: bool = true;
 
+static BOOTSTRAPPER_PORT: u16 = 8080;
+
 fn request_file(bootstrapper_addr: &String) -> Result<String, String> {
-    let mut stream = match TcpStream::connect(bootstrapper_addr) {
+    let mut stream = match connect(bootstrapper_addr, BOOTSTRAPPER_PORT) {
         Ok(stream) => stream,
-        Err(_) => return Err("Error connecting to server. Perhaps it's down?".to_string()),
+        Err(e) => return Err(e),
     };
 
     let body = match get_request(&mut stream, "Olá ^.^") {
@@ -44,10 +48,12 @@ fn main() -> Result<(), ()> {
     let own_ip = match args.get(2) {
         Some(addr) => addr.to_owned(),
         None => {
-            logger.log_error(
-                "This program requires the machine's own ip as the second argument".to_string()
-            ).expect("Log error");
-            return Err(())
+            logger
+                .log_error(
+                    "This program requires the machine's own ip as the second argument".to_string(),
+                )
+                .expect("Log error");
+            return Err(());
         }
     };
 
@@ -70,7 +76,7 @@ fn main() -> Result<(), ()> {
 
     let table = match RoutingTable::from_file(file, own_ip) {
         Ok(table) => table,
-        Err(_) => return Err(())
+        Err(_) => return Err(()),
     };
 
     let mut shared_mem = Arc::new(RwLock::new(table));
@@ -98,13 +104,11 @@ fn main() -> Result<(), ()> {
         }
     });
 
-    loop {
+    loop {}
 
-    }
+    //logger
+    //    .log_info("oNode is turning off!".to_string())
+    //    .expect("Log info");
 
-    logger
-        .log_info("oNode is turning off!".to_string())
-        .expect("Log info");
-
-    Ok(())
+    //Ok(())
 }

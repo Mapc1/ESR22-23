@@ -17,6 +17,10 @@ path = "src/apps/oNode.rs"
 name = "server"
 path = "src/apps/server.rs"
 
+[[bin]]
+name = "client"
+path = "src/apps/client.rs"
+
 [lib]
 name = "lib"
 path = "src/lib/lib.rs"

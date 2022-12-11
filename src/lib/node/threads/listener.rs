@@ -4,7 +4,6 @@ use std::str::{from_utf8_unchecked, from_utf8};
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, SystemTime};
 
-use crate::node::flooding::link::Link;
 use crate::node::flooding::routing_table::RoutingTable;
 use crate::node::packets::flood_packet::FloodPacket;
 use crate::node::packets::packet::{PacketType, Packet};
@@ -77,8 +76,11 @@ pub fn handle_packet(mut stream: TcpStream, table: &mut Arc<RwLock<RoutingTable>
             }
 
             println!("Sending flood to {}", l.addr);
-            let mut stream = TcpStream::connect(format!("{}:{}", l.addr.clone(), LISTENER_PORT)).unwrap();
-            stream.write(flood_pack.to_bytes().unwrap().as_ref()).unwrap();
+            let mut stream =
+                TcpStream::connect(format!("{}:{}", l.addr.clone(), LISTENER_PORT)).unwrap();
+            stream
+                .write(flood_pack.to_bytes().unwrap().as_ref())
+                .unwrap();
         }
     }
 

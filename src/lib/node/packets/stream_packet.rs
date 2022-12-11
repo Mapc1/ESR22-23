@@ -1,9 +1,11 @@
-use std::{net::{TcpStream, UdpSocket}, str::from_utf8, sync::{Arc, Mutex, RwLock}};
+use std::{
+    net::UdpSocket,
+    str::from_utf8,
+    sync::{Arc, RwLock}
+};
 
 use serde::{Serialize, Deserialize};
 use crate::node::{flooding::routing_table::RoutingTable, threads::listener::LISTENER_PORT};
-
-use super::packet::{Packet, PacketType};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct StreamPacket {
@@ -32,18 +34,26 @@ impl StreamPacket {
 
     pub fn handle(&mut self, socket: &UdpSocket, peer_addr: String, table: &mut Arc<RwLock<RoutingTable>>) -> Result<bool, String> {
         println!("{}", from_utf8(&self.data).unwrap());
-        let lock = table.read().unwrap();
-
-        for link in lock.links.iter() {
-            if !link.has_clients || link.addr == peer_addr {
+        let pack_bytes = self.to_bytes()?;
+        
+        let mut write_lock = table.write().unwrap();
+        for link in write_lock.links.iter_mut() {
+            if !link.has_clients {
+                continue;
+            }
+            if link.addr == peer_addr {
+                link.has_clients = true;
                 continue;
             }
 
             println!("Sending stream to {}",link.addr);
-            let pack_bytes = self.to_bytes()?;
             if let Err(err) = socket.send_to(&pack_bytes, format!("{}:{}", link.addr, LISTENER_PORT)) {
                 println!("{}", err.to_string());
             }
+        }
+
+        for client in write_lock.clients.iter() {
+            socket.send_to(&pack_bytes, format!("{}:{}", client, LISTENER_PORT)).unwrap();
         }
 
         Ok(true)
