@@ -1,7 +1,9 @@
 #![allow(non_snake_case)]
 
+use std::sync::{Arc, Mutex, RwLock};
 use std::{env, net::TcpStream};
 
+use lib::node::threads::listener::udp_listener;
 use lib::{
     http::connection::get_request, logging::logger::Logger, node::threads::listener::listener,
 };
@@ -66,10 +68,12 @@ fn main() -> Result<(), ()> {
         .log_dbg(format!("File received: {file:#?}"))
         .expect("Log debug");
 
-    let mut table = match RoutingTable::from_file(file, own_ip) {
+    let table = match RoutingTable::from_file(file, own_ip) {
         Ok(table) => table,
-        Err(err) => return Err(())
+        Err(_) => return Err(())
     };
+
+    let mut shared_mem = Arc::new(RwLock::new(table));
 
     // Creating the needed threads
     logger
@@ -77,7 +81,16 @@ fn main() -> Result<(), ()> {
         .expect("Log info");
 
     let logger_copy = logger.clone();
-    std::thread::spawn(move || match listener(&mut table) {
+    let mut shared_mem_cpy = shared_mem.clone();
+    std::thread::spawn(move || match listener(&mut shared_mem_cpy) {
+        Ok(_) => Ok(()),
+        Err(error) => {
+            logger_copy.log_error(error).expect("Log error");
+            Err(())
+        }
+    });
+    let logger_copy = logger.clone();
+    std::thread::spawn(move || match udp_listener(&mut shared_mem) {
         Ok(_) => Ok(()),
         Err(error) => {
             logger_copy.log_error(error).expect("Log error");

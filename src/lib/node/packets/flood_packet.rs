@@ -1,4 +1,5 @@
 use std::net::TcpStream;
+use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, SystemTime, SystemTimeError};
 use rmp_serde::{Deserializer, Serializer};
 
@@ -58,10 +59,9 @@ impl FloodPacket {
 
 impl Packet for FloodPacket {
     // FIXME
-    fn handle(&self, mut stream: TcpStream, table: &mut RoutingTable) -> Result<bool, String> {
+    fn handle(&self, mut stream: TcpStream, table: &mut Arc<RwLock<RoutingTable>>) -> Result<bool, String> {
         let peer_addr = stream.peer_addr().unwrap().ip().to_string();
-        let changed = table.handle_flood_packet(peer_addr, self)?;
-        println!("{table:#?}");
+        let changed = table.write().unwrap().handle_flood_packet(peer_addr, self)?;
 
         Ok(changed)
     }

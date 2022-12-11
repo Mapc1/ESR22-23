@@ -1,8 +1,11 @@
 use std::io::Write;
-use std::net::TcpStream;
+use std::net::{TcpStream, UdpSocket};
 use std::time::Duration;
+use std::thread;
 
 use lib::node::packets::flood_packet::FloodPacket;
+
+use lib::node::packets::stream_packet::StreamPacket;
 
 fn main() {
     let neighbor_addr = "10.0.0.1";
@@ -11,7 +14,9 @@ fn main() {
 
     let my_addr = "10.0.0.0";
 
-    let mut stream = match TcpStream::connect(format!("{neighbor_addr}:{neighbor_port}")) {
+    let full_neighbour_addr = format!("{neighbor_addr}:{neighbor_port}");
+
+    let mut stream = match TcpStream::connect(full_neighbour_addr.clone()) {
         Ok(stream) => stream,
         Err(_) => {
             println!("Error connecting to neighbor");
@@ -30,6 +35,23 @@ fn main() {
         }
         Err(err) => {
             println!("{}", err);
+            return;
         }
     }
+
+    println!("Sending stream");
+    let mut stream_pack = StreamPacket::new("penis".as_bytes().to_vec());
+    println!("{full_neighbour_addr}");
+    thread::sleep(Duration::from_secs(2));
+    let udp_stream = UdpSocket::bind(format!("0.0.0.0:1234")).unwrap();
+    match stream_pack.to_bytes() {
+        Ok(bytes) => {
+            udp_stream.send_to(&bytes[..], full_neighbour_addr).unwrap();
+        }
+        Err(err) =>{
+            println!("{}", err.to_string());
+            return;
+        }
+    }
+
 }

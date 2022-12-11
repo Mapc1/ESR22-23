@@ -9,6 +9,7 @@ pub struct Link {
     pub active: bool,
     pub times_down: u8,
     pub last_down: SystemTime,
+    pub has_clients: bool,
 }
 
 impl Link {
@@ -20,6 +21,7 @@ impl Link {
         active: bool,
         times_down: u8,
         last_down: SystemTime,
+        has_clients: bool
     ) -> Self {
         Self {
             addr,
@@ -29,6 +31,7 @@ impl Link {
             active,
             times_down,
             last_down,
+            has_clients
         }
     }
 
@@ -40,7 +43,8 @@ impl Link {
             delay: Duration::MAX,
             active: false,
             times_down: 0,
-            last_down: SystemTime::UNIX_EPOCH
+            last_down: SystemTime::UNIX_EPOCH,
+            has_clients: false
         }
     }
 }

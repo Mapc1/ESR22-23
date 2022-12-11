@@ -44,8 +44,6 @@ impl RoutingTable {
     }
 
     pub fn handle_flood_packet(&mut self, peer_addr: String, packet: &FloodPacket) -> Result<bool, String> {
-        println!("{peer_addr}");
-
         let mut iterator = self.links.iter_mut();
         let link = loop {
             let l = iterator.next().unwrap();
@@ -78,6 +76,6 @@ impl RoutingTable {
 
         self.closest_link = closest.clone();
 
-        prev_closest.source != self.closest_link.source
+        prev_closest.addr != self.closest_link.addr
     }
 }

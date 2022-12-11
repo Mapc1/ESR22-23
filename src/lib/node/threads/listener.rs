@@ -1,17 +1,36 @@
 use std::io::{Read, Write};
-use std::net::{TcpListener, TcpStream};
+use std::net::{TcpListener, TcpStream, UdpSocket};
+use std::str::{from_utf8_unchecked, from_utf8};
+use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, SystemTime};
 
 use crate::node::flooding::link::Link;
 use crate::node::flooding::routing_table::RoutingTable;
 use crate::node::packets::flood_packet::FloodPacket;
-use crate::node::packets::packet::PacketType;
+use crate::node::packets::packet::{PacketType, Packet};
+use crate::node::packets::stream_packet::StreamPacket;
 use crate::types::networking::Addr;
 
 const LISTENER_IP: &Addr = "0.0.0.0";
-const LISTENER_PORT: u16 = 1234;
+pub const LISTENER_PORT: u16 = 1234;
 
-pub fn listener(table: &mut RoutingTable) -> Result<(), String> {
+pub fn udp_listener(table: &mut Arc<RwLock<RoutingTable>>) -> Result<(), String> {
+    let socket = match UdpSocket::bind(format!("{LISTENER_IP}:{LISTENER_PORT}")) {
+        Ok(socket) => socket,
+        Err(err) => return Err(err.to_string()),
+    };
+    loop {
+        let mut buf: [u8; 1500] = [0; 1500];
+        let (_, addr) = socket.recv_from(&mut buf).unwrap();
+
+        let pack_size = u16::from_be_bytes(buf[1..3].try_into().unwrap());
+        let mut pack = StreamPacket::from_bytes_packet_type(buf[3..pack_size as usize].to_vec());
+
+        pack.handle(&socket, addr.ip().to_string(), table)?;
+    }
+}
+
+pub fn listener(table: &mut Arc<RwLock<RoutingTable>>) -> Result<(), String> {
     let listener = match TcpListener::bind(format!("{LISTENER_IP}:{LISTENER_PORT}")) {
         Ok(listener) => listener,
         Err(_) => return Err("Error binding listener".to_string()),
@@ -30,7 +49,7 @@ pub fn listener(table: &mut RoutingTable) -> Result<(), String> {
     Ok(())
 }
 
-pub fn handle_packet(mut stream: TcpStream, table: &mut RoutingTable) -> Result<(), String> {
+pub fn handle_packet(mut stream: TcpStream, table: &mut Arc<RwLock<RoutingTable>>) -> Result<(), String> {
     // Packet -> [type: u8, size:u16] 3 bytes -> Data[size]
     let mut buffer = [0; 1500];
 
@@ -41,20 +60,19 @@ pub fn handle_packet(mut stream: TcpStream, table: &mut RoutingTable) -> Result<
 
     let packet_size = u16::from_be_bytes(buffer[1..3].try_into().unwrap());
 
-    let packet = match PacketType::from_u8(buffer[0], buffer[3..packet_size as usize].to_vec()) {
+    let mut packet = match PacketType::from_u8(buffer[0], buffer[3..packet_size as usize].to_vec()) {
         Some(packet) => packet,
         None => return Err("Invalid packet type".to_string()),
     };
 
-    println!("Packet: {packet:?}");
-
     let changed = packet.handle(stream, table)?;
 
     if changed {
-        let flood_pack = FloodPacket::from_link(&table.closest_link);
+        let lock = table.write().unwrap();
+        let flood_pack = FloodPacket::from_link(&lock.closest_link);
 
-        for l in table.links.iter() {
-            if l.addr == table.closest_link.addr {
+        for l in lock.links.iter() {
+            if l.addr == lock.closest_link.addr {
                 continue
             }
 

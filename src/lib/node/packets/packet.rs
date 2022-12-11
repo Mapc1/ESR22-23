@@ -1,15 +1,21 @@
 use crate::node::flooding::link::Link;
-use crate::node::packets::ack_packet::AckPacket;
-use crate::node::packets::flood_packet::FloodPacket;
-use crate::node::packets::request_packet::RequestPacket;
+use crate::node::packets::{
+    ack_packet::AckPacket,
+    flood_packet::FloodPacket,
+    request_packet::RequestPacket,
+    stream_packet::StreamPacket,
+};
 use std::net::TcpStream;
+use std::sync::{Arc, Mutex, RwLock};
 use crate::node::flooding::routing_table::RoutingTable;
+
 
 #[derive(Debug)]
 pub enum PacketType {
     Flood(FloodPacket),
     Request(RequestPacket), // Request for stream content
     Ack(AckPacket),
+    Stream(StreamPacket),
 }
 
 impl PacketType {
@@ -22,21 +28,23 @@ impl PacketType {
                 bytes,
             ))),
             2 => Some(PacketType::Ack(AckPacket::from_bytes_packet_type(bytes))),
+            3 => Some(PacketType::Stream(StreamPacket::from_bytes_packet_type(bytes))),
             _ => None,
         }
     }
 
-    pub fn handle(&self, stream: TcpStream, table: &mut RoutingTable) -> Result<bool, String> {
+    pub fn handle(&mut self, stream: TcpStream, table: &mut Arc<RwLock<RoutingTable>>) -> Result<bool, String> {
         match self {
             PacketType::Flood(packet) => packet.handle(stream, table),
             PacketType::Request(packet) => packet.handle(stream, table),
             PacketType::Ack(packet) => packet.handle(stream, table),
+            PacketType::Stream(packet) => Err("FIXME".to_string()),
         }
     }
 }
 
 pub trait Packet {
-    fn handle(&self, stream: TcpStream, table: &mut RoutingTable) -> Result<bool, String>;
+    fn handle(&self, stream: TcpStream, table: &mut Arc<RwLock<RoutingTable>>) -> Result<bool, String>;
 }
 
 // [type, size] -> Data[size]
