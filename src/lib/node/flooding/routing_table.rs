@@ -4,14 +4,14 @@ use crate::node::packets::flood_packet::FloodPacket;
 
 use super::link::Link;
 
-const TIME_MARGIN: f32 = 0.10;
+const _TIME_MARGIN: f32 = 0.10; // TODO: Should we being using this??
 
 #[derive(Debug, Clone)]
 pub struct RoutingTable {
     pub links: Vec<Link>,
     pub closest_link: Link,
     pub num_stream_connections: u32,
-    pub clients: Vec<String>
+    pub clients: Vec<String>,
 }
 
 impl RoutingTable {
@@ -20,7 +20,7 @@ impl RoutingTable {
             closest_link: Link::new_default("dummy"),
             links,
             num_stream_connections: 0,
-            clients: Vec::new()
+            clients: Vec::new(),
         };
         table.calc_closest_link();
         table
@@ -62,7 +62,11 @@ impl RoutingTable {
             }
         };
 
-        let delay = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis() as u64 - packet.timestamp;
+        let delay = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as u64
+            - packet.timestamp;
 
         link.source = packet.source.to_string();
         link.jumps = packet.jumps;
@@ -88,16 +92,6 @@ impl RoutingTable {
 
     pub fn has_active_connections(&self) -> bool {
         self.num_stream_connections > 0
-    }
-
-    fn get_active_links(&self) -> Vec<Link> {
-        let mut active_links: Vec<Link> = Vec::new();
-        for l in self.links.iter() {
-            if l.active {
-                active_links.push(l.clone());
-            }
-        }
-        active_links
     }
 
     /**
@@ -156,7 +150,7 @@ impl RoutingTable {
                 return Ok(());
             }
         }
-        
+
         Err("Node wasn't receiving the stream...".to_string())
     }
 }

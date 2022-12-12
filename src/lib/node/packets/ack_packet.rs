@@ -1,8 +1,8 @@
-use std::net::TcpStream;
-use std::sync::{Arc, Mutex, RwLock};
 use crate::node::flooding::routing_table::RoutingTable;
-use serde::{Deserialize, Serialize};
 use crate::node::packets::packet::Packet;
+use serde::{Deserialize, Serialize};
+use std::net::TcpStream;
+use std::sync::{Arc, RwLock};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AckPacket {}
@@ -14,7 +14,11 @@ impl AckPacket {
 }
 
 impl Packet for AckPacket {
-    fn handle(&self, mut stream: TcpStream, links: &mut Arc<RwLock<RoutingTable>>) -> Result<bool, String>{
+    fn handle(
+        &self,
+        _stream: TcpStream,
+        _links: &mut Arc<RwLock<RoutingTable>>,
+    ) -> Result<bool, String> {
         todo!()
     }
 

@@ -16,10 +16,10 @@ pub struct RefusePacket {}
 
 impl RefusePacket {
     pub fn new() -> Self {
-        Self { }
+        Self {}
     }
 
-    pub fn from_bytes_packet_type(bytes: Vec<u8>) -> RefusePacket {
+    pub fn from_bytes_packet_type(_bytes: Vec<u8>) -> RefusePacket {
         Self::new()
     }
 
@@ -36,7 +36,11 @@ impl Packet for RefusePacket {
     /*
     Returns true if the node becomes inactive
      */
-    fn handle(&self, stream: TcpStream, table: &mut Arc<RwLock<RoutingTable>>) -> Result<bool, String> {
+    fn handle(
+        &self,
+        stream: TcpStream,
+        table: &mut Arc<RwLock<RoutingTable>>,
+    ) -> Result<bool, String> {
         let mut table_lock = table.write().unwrap();
         return match table_lock.handle_teardown_packet(get_peer_addr(&stream)) {
             Ok(_) => {
@@ -45,7 +49,8 @@ impl Packet for RefusePacket {
                 } else {
                     // Sends refuse packet to the peer that sends the stream that is the closest link
                     // TODO: Send refuse packet to the peer that sends the stream
-                    let mut back_stream = connect(&table_lock.closest_link.addr, LISTENER_PORT).unwrap();
+                    let mut back_stream =
+                        connect(&table_lock.closest_link.addr, LISTENER_PORT).unwrap();
                     back_stream.write(&self.to_bytes().unwrap()).unwrap();
                     Ok(true)
                 }

@@ -1,4 +1,4 @@
-use std::time::{Duration, SystemTime};
+use std::time::SystemTime;
 
 #[derive(Debug, Clone)]
 pub struct Link {
@@ -21,7 +21,7 @@ impl Link {
         active: bool,
         times_down: u8,
         last_down: SystemTime,
-        has_clients: bool
+        has_clients: bool,
     ) -> Self {
         Self {
             addr,
@@ -31,7 +31,7 @@ impl Link {
             active,
             times_down,
             last_down,
-            has_clients
+            has_clients,
         }
     }
 
@@ -44,7 +44,7 @@ impl Link {
             active: false,
             times_down: 0,
             last_down: SystemTime::UNIX_EPOCH,
-            has_clients: false
+            has_clients: false,
         }
     }
 }

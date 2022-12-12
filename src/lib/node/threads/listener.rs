@@ -1,12 +1,10 @@
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream, UdpSocket};
-use std::str::{from_utf8_unchecked, from_utf8};
-use std::sync::{Arc, Mutex, RwLock};
-use std::time::{Duration, SystemTime};
+use std::sync::{Arc, RwLock};
 
 use crate::node::flooding::routing_table::RoutingTable;
 use crate::node::packets::flood_packet::FloodPacket;
-use crate::node::packets::packet::{PacketType, Packet};
+use crate::node::packets::packet::PacketType;
 use crate::node::packets::stream_packet::StreamPacket;
 use crate::types::networking::Addr;
 
@@ -19,7 +17,7 @@ pub fn udp_listener(table: &mut Arc<RwLock<RoutingTable>>) -> Result<(), String>
         Ok(socket) => socket,
         Err(err) => return Err(err.to_string()),
     };
-    
+
     let mut buf: [u8; MAX_BUFF_SIZE] = [0; MAX_BUFF_SIZE];
     loop {
         let (_, addr) = socket.recv_from(&mut buf).unwrap();
@@ -51,7 +49,10 @@ pub fn listener(table: &mut Arc<RwLock<RoutingTable>>) -> Result<(), String> {
     Ok(())
 }
 
-pub fn handle_packet(mut stream: TcpStream, table: &mut Arc<RwLock<RoutingTable>>) -> Result<(), String> {
+pub fn handle_packet(
+    mut stream: TcpStream,
+    table: &mut Arc<RwLock<RoutingTable>>,
+) -> Result<(), String> {
     // Packet -> [type: u8, size:u16] 3 bytes -> Data[size]
     let mut buffer = [0; 1500];
 
@@ -62,7 +63,8 @@ pub fn handle_packet(mut stream: TcpStream, table: &mut Arc<RwLock<RoutingTable>
 
     let packet_size = u16::from_be_bytes(buffer[1..3].try_into().unwrap());
 
-    let mut packet = match PacketType::from_u8(buffer[0], buffer[3..packet_size as usize].to_vec()) {
+    let mut packet = match PacketType::from_u8(buffer[0], buffer[3..packet_size as usize].to_vec())
+    {
         Some(packet) => packet,
         None => return Err("Invalid packet type".to_string()),
     };
@@ -75,7 +77,7 @@ pub fn handle_packet(mut stream: TcpStream, table: &mut Arc<RwLock<RoutingTable>
 
         for l in lock.links.iter() {
             if l.addr == lock.closest_link.addr {
-                continue
+                continue;
             }
 
             //println!("Sending flood to {}", l.addr);

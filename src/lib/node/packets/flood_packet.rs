@@ -2,13 +2,11 @@ use std::net::TcpStream;
 use std::sync::{Arc, RwLock};
 use std::time::SystemTime;
 
-use serde::{Deserialize, Serialize, Deserializer};
+use serde::{Deserialize, Serialize};
 
 use crate::node::flooding::link::Link;
 use crate::node::flooding::routing_table::RoutingTable;
 use crate::node::packets::packet::Packet;
-
-const TIME_MARGIN: f32 = 0.1;
 
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct FloodPacket {
@@ -22,7 +20,10 @@ impl FloodPacket {
         Self {
             source,
             jumps: cost,
-            timestamp: timestamp.duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis() as u64,
+            timestamp: timestamp
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap()
+                .as_millis() as u64,
         }
     }
 
@@ -51,7 +52,10 @@ impl FloodPacket {
         Self {
             source: link.addr.to_string(),
             jumps: link.jumps + 1,
-            timestamp: SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis() as u64,
+            timestamp: SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap()
+                .as_millis() as u64,
         }
     }
 }
@@ -61,9 +65,16 @@ impl Packet for FloodPacket {
         0
     }
 
-    fn handle(&self, mut stream: TcpStream, table: &mut Arc<RwLock<RoutingTable>>) -> Result<bool, String> {
+    fn handle(
+        &self,
+        stream: TcpStream,
+        table: &mut Arc<RwLock<RoutingTable>>,
+    ) -> Result<bool, String> {
         let peer_addr = stream.peer_addr().unwrap().ip().to_string();
-        let changed = table.write().unwrap().handle_flood_packet(peer_addr, self)?;
+        let changed = table
+            .write()
+            .unwrap()
+            .handle_flood_packet(peer_addr, self)?;
 
         Ok(changed)
     }
