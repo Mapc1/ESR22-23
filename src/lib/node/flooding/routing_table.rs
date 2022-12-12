@@ -128,24 +128,20 @@ impl RoutingTable {
 
     Returns **Ok** if the node becomes inactive.
     */
-    pub fn handle_teardown_packet(&mut self, peer_addr: String) -> Result<(), String> {
-        let mut found_link = false;
-
+    pub fn handle_refuse_packet(&mut self, peer_addr: String) -> Result<(), String> {
         for l in self.links.iter_mut() {
             if l.addr == peer_addr {
-                println!("Teardown from {}", l.addr);
+                println!("Refuse Packet from {}", l.addr);
                 l.active = false;
                 self.num_stream_connections -= 1;
-                found_link = true;
+                return Ok(());
             }
         }
 
-        if found_link {
-            return Ok(());
-        }
+        // If we got here, the refuse is from a client
         for i in 0..self.clients.len() {
             if self.clients[i] == peer_addr {
-                println!("teardown from client {peer_addr}");
+                println!("Refuse Packet from client {peer_addr}");
                 self.clients.remove(i);
                 return Ok(());
             }

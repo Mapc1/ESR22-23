@@ -62,13 +62,13 @@ impl dyn Packet {
     }
 }
 
+// [type u8, size  u16] -> data u8[size]
 pub trait Packet {
+    fn get_type(&self) -> u8;
+
     fn handle(
         &self,
         stream: TcpStream,
         table: &mut Arc<RwLock<RoutingTable>>,
     ) -> Result<bool, String>;
-    fn get_type(&self) -> u8;
 }
-
-// [type u8, size  u16] -> Data[size] u8[size]

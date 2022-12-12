@@ -61,10 +61,6 @@ impl FloodPacket {
 }
 
 impl Packet for FloodPacket {
-    fn get_type(&self) -> u8 {
-        0
-    }
-
     fn handle(
         &self,
         stream: TcpStream,
@@ -77,5 +73,9 @@ impl Packet for FloodPacket {
             .handle_flood_packet(peer_addr, self)?;
 
         Ok(changed)
+    }
+
+    fn get_type(&self) -> u8 {
+        0
     }
 }

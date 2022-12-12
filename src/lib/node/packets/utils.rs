@@ -12,19 +12,21 @@ pub fn get_peer_addr(stream: &TcpStream) -> String {
 pub fn connect(peer_addr: &String, port: u16) -> Result<TcpStream, String> {
     let socket_addr = match format!("{peer_addr}:{port}").parse() {
         Ok(addr) => addr,
-        Err(_) => return Err("Cannot create socket address {peer_addr}: {port}".to_string()),
+        Err(_) => {
+            return Err(format!("Cannot create socket address {peer_addr}: {port}").to_string())
+        }
     };
 
-    for retry_time in 1..RETRY_TIMES {
-        println!("Try number: {retry_time}");
+    for _ in 1..RETRY_TIMES {
         match TcpStream::connect_timeout(&socket_addr, TIMEOUT) {
             Ok(stream) => return Ok(stream),
             Err(_) => {
                 thread::sleep(TIMEOUT);
+                println!("Retrying connection to {peer_addr}");
                 continue;
             }
         };
     }
 
-    Err("Error connecting to server. Perhaps it's down?".to_string())
+    Err("Error connecting to peer. Perhaps it's down?".to_string())
 }

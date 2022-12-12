@@ -42,20 +42,15 @@ impl Packet for RefusePacket {
         table: &mut Arc<RwLock<RoutingTable>>,
     ) -> Result<bool, String> {
         let mut table_lock = table.write().unwrap();
-        return match table_lock.handle_teardown_packet(get_peer_addr(&stream)) {
-            Ok(_) => {
-                if table_lock.has_active_connections() {
-                    Ok(false)
-                } else {
-                    // Sends refuse packet to the peer that sends the stream that is the closest link
-                    // TODO: Send refuse packet to the peer that sends the stream
-                    let mut back_stream =
-                        connect(&table_lock.closest_link.addr, LISTENER_PORT).unwrap();
-                    back_stream.write(&self.to_bytes().unwrap()).unwrap();
-                    Ok(true)
-                }
-            }
-            Err(e) => Err(e),
-        };
+        table_lock.handle_refuse_packet(get_peer_addr(&stream))?;
+
+        if table_lock.has_active_connections() {
+            Ok(false)
+        } else {
+            // TODO: Send refuse packet to the peer that sends the stream
+            let mut back_stream = connect(&table_lock.closest_link.addr, LISTENER_PORT)?;
+            back_stream.write(&self.to_bytes()?).unwrap();
+            Ok(true)
+        }
     }
 }

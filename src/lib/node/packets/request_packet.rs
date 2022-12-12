@@ -45,10 +45,8 @@ impl Packet for RequestPacket {
         }
         .unwrap();
         if lock.num_stream_connections == 1 {
-            let mut back_stream = match connect(&lock.closest_link.addr, LISTENER_PORT) {
-                Ok(stream) => stream,
-                Err(e) => return Err(e),
-            };
+            let mut back_stream = connect(&lock.closest_link.addr, LISTENER_PORT)?;
+
             return match back_stream.write(&self.to_bytes()) {
                 Ok(_) => Ok(true),
                 Err(e) => Err(e.to_string()),

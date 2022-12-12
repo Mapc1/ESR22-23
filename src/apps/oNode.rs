@@ -19,10 +19,7 @@ static BOOTSTRAPPER_PORT: u16 = 8080;
 static DEFAULT_BOOTSTRAPPER_ADDR: &str = "10.0.0.10";
 
 fn request_file(bootstrapper_addr: &String) -> Result<String, String> {
-    let mut stream = match connect(bootstrapper_addr, BOOTSTRAPPER_PORT) {
-        Ok(stream) => stream,
-        Err(e) => return Err(e),
-    };
+    let mut stream = connect(bootstrapper_addr, BOOTSTRAPPER_PORT)?;
 
     let body = match get_request(&mut stream, "Olá ^.^") {
         Ok(body) => body,
