@@ -10,17 +10,16 @@ from VideoStream import VideoStream
 
 
 class Server:
-    BOOTSTRAPPER_PORT = 8080
-    NODE_PORT = 1234
+
+    RTSP_PORT = 1234
+    RTP_PORT = 1234
     topologia = {}
-    vizinhos_ip = []
 
     VIDEO_PATH = "../video/"
-    RTP_PORT = 1234
 
     SETUP = 0
     PLAY = 1
-    # PAUSE = 'PAUSE'
+    # ACK = 2
     TEARDOWN = 3
 
     INIT = 0
@@ -31,9 +30,6 @@ class Server:
     clientInfo = {}
     active_clients = False
 
-    true_frameNumber = 0
-    current_frameNumber = 0
-    last_frame = 0
 
     def read_bootstrapper(self):
 
@@ -46,6 +42,7 @@ class Server:
 
         print(self.topologia)
         return self.topologia
+
 
     def flood(self, SERVER_ADDRESS, video_file):
         vizinhos = self.topologia[SERVER_ADDRESS]
@@ -71,76 +68,56 @@ class Server:
             self.clientInfo[vizinho]['rtpPort'] = self.RTP_PORT
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             try:
-                s.connect((vizinho, self.NODE_PORT))
+                s.connect((vizinho, self.RTSP_PORT))
                 s.send(packet)
             except:
                 print(f"Connection to {vizinho} failed\n")
 
+
     def processRtspRequest(self, data, addr):
         """Process RTSP request sent from the client."""
-        # Get the request type
-        # request = data.split(' ')
-        # requestType = request[0]
+        # Get the request type and size
         requestType = int.from_bytes([data[0]], 'big')
         size = int.from_bytes(data[1:3], 'big')
 
-        # Get the RTSP sequence number
-        # seq = request[1]
         print(self.clientInfo)
+
         # Process SETUP request
         if requestType == self.SETUP:
             if self.clientInfo[addr]['state'] == self.INIT:
 
-                # Update state
                 print("processing SETUP\n")
 
                 try:
                     payload = msgpack.unpackb(data[3:size], raw=False)
-                    print(payload)
                     self.clientInfo[addr]['videoStream'] = VideoStream(self.video_file)
                     self.clientInfo[addr]['state'] = self.READY
                 except:
                     print("Error in payload or in video Stream\n")
 
-                # Generate a randomized RTSP session ID
-                # self.clientInfo['session'] = randint(100000, 999999)
-
-                # Send RTSP reply
-                # self.replyRtsp(self.OK_200, seq)
-
-                # Get the RTP/UDP port from the last line
+                # Assign fixed RTP port for UDP connection
                 self.clientInfo[addr]['rtpPort'] = self.RTP_PORT
 
 
         # Process PLAY request
         elif requestType == self.PLAY:
             if self.clientInfo[addr]['state'] == self.READY:
+                
+                print("processing PLAY\n")  
                 self.clientInfo[addr]['active_clients'] = True
-                print("processing PLAY\n")
                 self.clientInfo[addr]['state'] = self.PLAYING
 
-                # Create a new socket for RTP/UDP
+                # Create a new socket for RTP/UDP that will be accessed 
+                # by the thread already running at his point
                 self.clientInfo[addr]["rtpSocket"] = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-        # self.replyRtsp(self.OK_200, seq)
-
-        # Create a new thread and start sending RTP packets
-        # self.clientInfo['event'] = threading.Event()
-        # self.clientInfo[addr]['worker']= threading.Thread(target=self.worker_list[addr].sendRtp)
-        # self.clientInfo[addr]['worker'].start()
 
         # Process TEARDOWN request
         elif requestType == self.TEARDOWN:
 
-            self.clientInfo[addr]['active_clients'] = False
             print("processing TEARDOWN\n")
+            self.clientInfo[addr]['active_clients'] = False
 
-        # self.clientInfo['event'].set()
-
-    # self.replyRtsp(self.OK_200, seq)
-
-    # Close the RTP socket
-    # self.clientInfo['rtpSocket'].close()
 
     def main(self):
         # Default parameters
@@ -152,7 +129,7 @@ class Server:
             if len(sys.argv) > 1:
                 server_port = int(sys.argv[1])
                 video_file = sys.argv[2]
-                server_address = sys.argv[3]  # aqui é o ip
+                server_address = sys.argv[3]
 
         except:
             print("[Usage: Server.py server_port Video_file server_address]")
@@ -172,15 +149,6 @@ class Server:
             sock, (addr, _) = rtspSocket.accept()
             data = sock.recv(1500)
             self.processRtspRequest(data, addr)
-
-    # Receive client info (address,port) through RTSP/TCP session
-
-
-# while True:
-#
-#	clientInfo = {}
-#	clientInfo['rtspSocket'] = rtspSocket.accept()
-#	ServerWorker(clientInfo,video_file).run()
 
 
 if __name__ == "__main__":
