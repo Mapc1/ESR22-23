@@ -12,7 +12,7 @@ pub fn get_peer_addr(stream: &TcpStream) -> String {
 pub fn connect(peer_addr: &String, port: u16) -> Result<TcpStream, String> {
     let socket_addr = match format!("{peer_addr}:{port}").parse() {
         Ok(addr) => addr,
-        Err(_) => return Err("Cannot create socket address".to_string()),
+        Err(_) => return Err("Cannot create socket address {peer_addr}: {port}".to_string()),
     };
 
     for retry_time in 1..RETRY_TIMES {

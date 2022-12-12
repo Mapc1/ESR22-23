@@ -1,3 +1,4 @@
+use std::env;
 use std::{
     fs,
     io::Read,
@@ -11,7 +12,7 @@ use lib::{
     logging::logger::Logger,
 };
 
-static FILE_PATH: &str = "configs/bootstrapper.conf";
+static DEFAULT_FILE_PATH: &str = "configs/bootstrapper.conf";
 static LISTENING_ADDRESS: &Addr = "0.0.0.0:8080";
 
 static INFO: bool = true;
@@ -34,14 +35,31 @@ fn handle_client(file: String, mut stream: TcpStream, logger: Logger) {
 fn main() -> Result<(), ()> {
     let logger = Logger::new(INFO, ERROR, DEBUG);
 
+    let args: Vec<String> = env::args().collect();
+
+    let bootstrapper_file_path = match args.get(1) {
+        Some(path) => path,
+        None => {
+            logger
+                .log_info(
+                    "No bootstrapper file path as the first argument, searching for default file path..."
+                        .to_string(),
+                )
+                .expect("Log info");
+            DEFAULT_FILE_PATH
+        }
+    };
+
     logger
         .log_info("Hello! Reading config file...".to_string())
         .expect("Log info");
-    let file_content = match fs::read_to_string(FILE_PATH) {
+    let file_content = match fs::read_to_string(bootstrapper_file_path) {
         Ok(content) => content,
         Err(_) => {
             logger
-                .log_error("Error reading file contents!".to_string())
+                .log_error(
+                    "Error reading file contents! Perhaps the file path is wrong?".to_string(),
+                )
                 .expect("Log error");
             return Err(());
         }

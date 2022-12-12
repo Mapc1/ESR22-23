@@ -5,7 +5,7 @@ import sys, traceback, threading, socket, time, msgpack
 
 class ServerWorker:
 	
-	VIDEO_PATH = "../video/"
+	VIDEO_PATH = "video/"
 	RTP_PORT = 1234
 
 	SETUP = 0
@@ -69,7 +69,7 @@ class ServerWorker:
 				try:
 					payload = msgpack.unpackb(data[5:size+5], raw=False)
 					print(payload)
-					self.clientInfo['videoStream'] = VideoStream(self.VIDEO_PATH + self.video_file)
+					self.clientInfo['videoStream'] = VideoStream(self.video_file)
 					self.clientInfo['state'] = self.READY
 				except:
 					print("Error in payload or in video Stream\n")
@@ -156,7 +156,7 @@ class ServerWorker:
 						print('-'*60)
 				else:
 					print("De novo")
-					self.clientInfo['videoStream'] = VideoStream(self.VIDEO_PATH + self.video_file)
+					self.clientInfo['videoStream'] = VideoStream(self.video_file)
 					self.last_frame = self.true_frameNumber
 
 	def sendPings(self):

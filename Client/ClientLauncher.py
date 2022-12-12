@@ -4,17 +4,17 @@ from Client import Client
 
 if __name__ == "__main__":
 	try:
-		serverAddr = sys.argv[1]
+		nodeAddr = sys.argv[1]
 		serverPort = sys.argv[2]
 		rtpPort = sys.argv[3]
 		pingPort = sys.argv[4]
 	except:
-		print("[Usage: ClientLauncher.py Server_name Server_port RTP_port Ping_Port]\n")	
-	
+		print("[Usage: ClientLauncher.py node_addr server_port RTP_port ping_port]")
+		exit(1)
+
 	root = Tk()
-	
+
 	# Create a new client
-	app = Client(root, serverAddr, serverPort, rtpPort, pingPort)
-	app.master.title("RTPClient")	
+	app = Client(root, nodeAddr, serverPort, rtpPort, pingPort)
+	app.master.title("RTPClient")
 	root.mainloop()
-	

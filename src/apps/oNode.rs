@@ -1,12 +1,11 @@
 #![allow(non_snake_case)]
 
-use std::sync::{Arc, RwLock};
 use std::env;
-
-use lib::node::threads::listener::udp_listener;
+use std::sync::{Arc, RwLock};
 
 use lib::node::flooding::routing_table::RoutingTable;
 use lib::node::packets::utils::connect;
+use lib::node::threads::listener::udp_listener;
 use lib::{
     http::connection::get_request, logging::logger::Logger, node::threads::listener::listener,
 };
@@ -16,6 +15,8 @@ static ERROR: bool = true;
 static DBG: bool = true;
 
 static BOOTSTRAPPER_PORT: u16 = 8080;
+
+static DEFAULT_BOOTSTRAPPER_ADDR: &str = "10.0.0.10";
 
 fn request_file(bootstrapper_addr: &String) -> Result<String, String> {
     let mut stream = match connect(bootstrapper_addr, BOOTSTRAPPER_PORT) {
@@ -36,31 +37,34 @@ fn main() -> Result<(), ()> {
 
     let args: Vec<String> = env::args().collect();
 
-    let bootstrapper_addr = match args.get(1) {
-        Some(addr) => addr,
-        None => {
-            logger.log_error(
-                "This program requires the bootstrapper ip address as the first argument, but none were given".to_string()
-            ).expect("Log error");
-            return Err(());
-        }
-    };
-    let own_ip = match args.get(2) {
+    let own_ip = match args.get(1) {
         Some(addr) => addr.to_owned(),
         None => {
             logger
                 .log_error(
-                    "This program requires the machine's own ip as the second argument".to_string(),
+                    "This program requires the machine's own ip as the first argument".to_string(),
                 )
                 .expect("Log error");
+
             return Err(());
+        }
+    };
+
+    let bootstrapper_addr = match args.get(2) {
+        Some(addr) => addr,
+        None => {
+            logger.log_error(
+                "No bootstrapper ip address as the second argument, searching for the default bootstrap address...".to_string()
+            ).expect("Log error");
+
+            DEFAULT_BOOTSTRAPPER_ADDR
         }
     };
 
     logger
         .log_info("Hello! Requesting topology from bootstrap server".to_string())
         .expect("Log info");
-    let file = match request_file(bootstrapper_addr) {
+    let file = match request_file(&bootstrapper_addr.to_string()) {
         Ok(content) => content,
         Err(error) => {
             logger.log_error(error.to_string()).expect("Log error");
@@ -70,13 +74,20 @@ fn main() -> Result<(), ()> {
     logger
         .log_info("File received successfully. Parsing...".to_string())
         .expect("Log info");
+    /*
     logger
         .log_dbg(format!("File received: {file:#?}"))
         .expect("Log debug");
+     */
 
     let table = match RoutingTable::from_file(file, own_ip) {
         Ok(table) => table,
-        Err(_) => return Err(()),
+        Err(_) => {
+            logger
+                .log_error("Error initializing routing table".to_string())
+                .expect("Log error");
+            return Err(());
+        }
     };
 
     let mut shared_mem = Arc::new(RwLock::new(table));
