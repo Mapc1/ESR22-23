@@ -23,7 +23,7 @@ pub fn udp_listener(table: &mut Arc<RwLock<RoutingTable>>) -> Result<(), String>
         let (_, addr) = socket.recv_from(&mut buf).unwrap();
 
         let pack_size = u16::from_be_bytes(buf[0..2].try_into().unwrap());
-        println!("{pack_size} | {}", buf[5]);
+        //println!("{pack_size} | {}", buf[5]);
         let mut pack = StreamPacket::from_bytes_packet_type(buf[2..pack_size as usize].to_vec());
 
         pack.handle(&socket, addr.ip().to_string(), table)?;
@@ -39,10 +39,7 @@ pub fn listener(table: &mut Arc<RwLock<RoutingTable>>) -> Result<(), String> {
     // accept connections and respond to each packet sent
     for stream in listener.incoming() {
         match stream {
-            Ok(stream) => match handle_packet(stream, table) {
-                Ok(_) => (),
-                Err(err) => return Err(err),
-            },
+            Ok(stream) => handle_packet(stream, table)?,
             Err(_) => return Err("Something went wrong with the connection".to_string()),
         }
     }
@@ -69,25 +66,35 @@ pub fn handle_packet(
         None => return Err("Invalid packet type".to_string()),
     };
 
+    println!(
+        "[Packet Received] type: {}, size: {}",
+        buffer[0], packet_size
+    );
+
     let changed = packet.handle(stream, table)?;
 
     if changed {
-        let lock = table.write().unwrap();
-        let flood_pack = FloodPacket::from_link(&lock.closest_link);
+        {
+            let lock = table.write().unwrap();
 
-        for l in lock.links.iter() {
-            if l.addr == lock.closest_link.addr {
-                continue;
+            let flood_pack = FloodPacket::from_link(&lock.closest_link);
+
+            for l in lock.links.iter() {
+                if l.addr == lock.closest_link.addr {
+                    continue;
+                }
+
+                //println!("Sending flood to {}", l.addr);
+                let mut stream =
+                    TcpStream::connect(format!("{}:{}", l.addr.clone(), LISTENER_PORT)).unwrap();
+                stream
+                    .write(flood_pack.to_bytes().unwrap().as_ref())
+                    .unwrap();
             }
-
-            //println!("Sending flood to {}", l.addr);
-            let mut stream =
-                TcpStream::connect(format!("{}:{}", l.addr.clone(), LISTENER_PORT)).unwrap();
-            stream
-                .write(flood_pack.to_bytes().unwrap().as_ref())
-                .unwrap();
         }
     }
+
+    println!("Packet handled {}", buffer[0]);
 
     // ...
 

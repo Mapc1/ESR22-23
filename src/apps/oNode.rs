@@ -103,6 +103,7 @@ fn main() -> Result<(), ()> {
             Err(())
         }
     });
+    
     let logger_copy = logger.clone();
     std::thread::spawn(move || match udp_listener(&mut shared_mem) {
         Ok(_) => Ok(()),

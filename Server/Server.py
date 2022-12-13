@@ -10,7 +10,6 @@ from VideoStream import VideoStream
 
 
 class Server:
-
     RTSP_PORT = 1234
     RTP_PORT = 1234
     topologia = {}
@@ -30,7 +29,6 @@ class Server:
     clientInfo = {}
     active_clients = False
 
-
     def read_bootstrapper(self):
 
         data = requests.get('http://0.0.0.0:8080')
@@ -43,14 +41,15 @@ class Server:
         print(self.topologia)
         return self.topologia
 
-
     def flood(self, SERVER_ADDRESS, video_file):
         vizinhos = self.topologia[SERVER_ADDRESS]
 
-        payload = {"source": SERVER_ADDRESS,
-                   "jumps": 0,
-                   "timestamp": int(time.time() * 1000)
-                   }
+        payload = {
+            "source": SERVER_ADDRESS,
+            "jumps": 0,
+            "timestamp": int(time.time() * 1000)
+        }
+
         packet = bytearray([])
         packet.append(0)
         pack_data = msgpack.packb(payload, use_bin_type=True)
@@ -72,7 +71,6 @@ class Server:
                 s.send(packet)
             except:
                 print(f"Connection to {vizinho} failed\n")
-
 
     def processRtspRequest(self, data, addr):
         """Process RTSP request sent from the client."""
@@ -102,8 +100,7 @@ class Server:
         # Process PLAY request
         elif requestType == self.PLAY:
             if self.clientInfo[addr]['state'] == self.READY:
-                
-                print("processing PLAY\n")  
+                print("processing PLAY\n")
                 self.clientInfo[addr]['active_clients'] = True
                 self.clientInfo[addr]['state'] = self.PLAYING
 
@@ -117,7 +114,6 @@ class Server:
 
             print("processing TEARDOWN\n")
             self.clientInfo[addr]['active_clients'] = False
-
 
     def main(self):
         # Default parameters

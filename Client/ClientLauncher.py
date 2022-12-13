@@ -11,6 +11,10 @@ if __name__ == "__main__":
 		print("[Usage: ClientLauncher.py node_addr RTPS_Port RTP_port]")
 		exit(1)
 
+	if not nodeAddr or not rtpsPort or not rtpPort:
+		print("[Usage: ClientLauncher.py node_addr RTPS_Port RTP_port]")
+		exit(1)
+
 	root = Tk()
 
 	# Create a new client
