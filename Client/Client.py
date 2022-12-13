@@ -80,13 +80,13 @@ class Client:
         try:
             self.sendRtspRequest(self.TEARDOWN)
         except:
-            pass
+            print("Teardown request failed.")
 
         try:
             self.master.destroy()  # Close the gui window
             os.remove(CACHE_FILE_NAME + str(self.sessionId) + CACHE_FILE_EXT)  # Delete the cache image from video
         except:
-            pass
+            print("Something went wrong while closing the client.")
 
     def pauseMovie(self):
         """Pause button handler."""
@@ -167,8 +167,11 @@ class Client:
             request = self.pause_stream(request)
 
         # Teardown request
-        elif requestCode == self.TEARDOWN and not self.state == self.INIT:
+        elif requestCode == self.TEARDOWN:  # and not self.state == self.INIT: // FIXME
             request = self.teardown_stream(request)
+        else:
+            print("Invalid operation")
+            return
 
         # Send the RTSP request using rtspSocket.
         self.rtspSocket.send(request)
@@ -180,7 +183,7 @@ class Client:
 
         # Write the RTSP request to be sent.
         request.append(self.TEARDOWN)
-        size = 0
+        size = 3
         request += size.to_bytes(2, 'big')
         self.playEvent.set()
 
@@ -202,7 +205,7 @@ class Client:
         self.playEvent.set()
 
         # Keep track of the sent request.
-        self.state == self.READY
+        self.state = self.READY
         self.requestSent = self.PAUSE
         return request
 
@@ -216,8 +219,10 @@ class Client:
 
         # Keep track of the sent request.
         self.requestSent = self.PLAY
-        self.state == self.PLAYING
+        self.state = self.PLAYING
+
         self.openRtpPort()
+
         return request
 
     def openRtpPort(self):

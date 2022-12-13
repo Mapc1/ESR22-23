@@ -1,5 +1,6 @@
 import socket
 import sys
+import threading
 import time
 
 import msgpack
@@ -32,7 +33,6 @@ class Server:
     def read_bootstrapper(self):
 
         data = requests.get('http://0.0.0.0:8080')
-        print(f"\ndata: {data.text}")
         lines = data.text.split('\n')
         for line in lines[:-1]:
             linha = line.split('-')
@@ -72,6 +72,8 @@ class Server:
             except:
                 print(f"Connection to {vizinho} failed\n")
 
+            s.close()
+
     def processRtspRequest(self, data, addr):
         """Process RTSP request sent from the client."""
         # Get the request type and size
@@ -87,7 +89,6 @@ class Server:
                 print("processing SETUP\n")
 
                 try:
-                    payload = msgpack.unpackb(data[3:size], raw=False)
                     self.clientInfo[addr]['videoStream'] = VideoStream(self.video_file)
                     self.clientInfo[addr]['state'] = self.READY
                 except:
@@ -115,6 +116,12 @@ class Server:
             print("processing TEARDOWN\n")
             self.clientInfo[addr]['active_clients'] = False
 
+    def flood_cycle(self, server_address, video_file):
+        while True:
+            time.sleep(5)
+            print("Sending flooding")
+            self.flood(server_address, video_file)
+
     def main(self):
         # Default parameters
         server_port = 1234
@@ -133,6 +140,10 @@ class Server:
 
         self.read_bootstrapper()
         self.flood(server_address, video_file)
+
+        threading.Thread(target=self.flood_cycle, args=(server_address, video_file)).start()
+
+        time.sleep(2)
 
         for vizinho in self.topologia[server_address]:
             ServerWorker(self.clientInfo[vizinho], video_file).run()
