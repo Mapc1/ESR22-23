@@ -120,7 +120,7 @@ class Server:
 
     def flood_cycle(self, server_address, video_file):
         while True:
-            time.sleep(5)
+            time.sleep(15)
             print("Sending flooding")
             self.flood(server_address, video_file)
 
@@ -143,9 +143,11 @@ class Server:
         self.read_bootstrapper()
         self.flood(server_address, video_file)
 
-        threading.Thread(target=self.flood_cycle, args=(server_address, video_file)).start()
+        flood_thread = threading.Thread(target=self.flood_cycle, args=(server_address, video_file,))
 
-        time.sleep(2)
+        flood_thread.start()
+
+        # time.sleep(2)
 
         for vizinho in self.topologia[server_address]:
             ServerWorker(self.clientInfo[vizinho], video_file).run()

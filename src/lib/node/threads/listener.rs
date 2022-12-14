@@ -1,6 +1,7 @@
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream, UdpSocket};
 use std::sync::{Arc, RwLock};
+use std::thread;
 
 use crate::node::flooding::routing_table::RoutingTable;
 use crate::node::packets::flood_packet::FloodPacket;
@@ -44,15 +45,15 @@ pub fn listener(table: &mut Arc<RwLock<RoutingTable>>) -> Result<(), String> {
             Err(_) => return Err("Something went wrong with the connection".to_string()),
         };
 
-        println!(
-            "Accepted connection from {}",
-            tcp_stream.peer_addr().unwrap()
-        );
+        println!("Accepted connection from {}", get_peer_addr(&tcp_stream)?);
 
-        match handle_connection(tcp_stream, table) {
-            Ok(_) => (),
-            Err(err) => println!("{}", err),
-        }
+        let mut table_cloned = table.clone();
+        thread::spawn(
+            move || match handle_connection(tcp_stream, &mut table_cloned) {
+                Ok(_) => (),
+                Err(err) => println!("{}", err),
+            },
+        );
     }
 
     Ok(())
