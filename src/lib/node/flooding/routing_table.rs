@@ -4,7 +4,7 @@ use crate::node::packets::flood_packet::FloodPacket;
 
 use super::link::Link;
 
-const _TIME_MARGIN: f32 = 0.10; // TODO: Should we being using this??
+const TIME_MARGIN: f32 = 0.10;
 
 #[derive(Debug, Clone)]
 pub struct RoutingTable {
@@ -80,7 +80,7 @@ impl RoutingTable {
         let prev_closest = self.closest_link.clone();
         let mut closest = &self.closest_link;
         for l in self.links.iter() {
-            if l.jumps < closest.jumps {
+            if RoutingTable::is_closer(l, closest) {
                 closest = l;
             }
         }
@@ -88,6 +88,22 @@ impl RoutingTable {
         self.closest_link = closest.clone();
 
         prev_closest.addr != self.closest_link.addr
+    }
+    
+    fn is_closer(link1: &Link, link2: &Link) -> bool {
+        let bottom_margin = (1.0-TIME_MARGIN) as f64 * link2.delay as f64;
+        let top_margin = (1.0+TIME_MARGIN) as f64 * link2.delay as f64;
+
+        if (link1.delay as f64) < bottom_margin {
+            return true;
+        }
+        if link1.delay as f64 > top_margin {
+            return false;
+        }
+        if link1.jumps < link2.jumps {
+            return true;
+        }
+        false
     }
 
     pub fn has_active_connections(&self) -> bool {
