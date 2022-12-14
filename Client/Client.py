@@ -2,6 +2,7 @@ import os
 import socket
 import threading
 import tkinter.messagebox
+from os import _exit
 from random import randint
 from tkinter import *
 
@@ -79,14 +80,21 @@ class Client:
         """Teardown button handler."""
         try:
             self.sendRtspRequest(self.TEARDOWN)
+            self.rtspSocket.shutdown(socket.SHUT_RDWR)
         except:
-            pass
+            print("Error: Teardown failed.")
 
         try:
             self.master.destroy()  # Close the gui window
+        except:
+            print("Error: Failed to destroy the GUI.")
+
+        try:
             os.remove(CACHE_FILE_NAME + str(self.sessionId) + CACHE_FILE_EXT)  # Delete the cache image from video
         except:
-            pass
+            print("Error: Cache file not found.")
+
+        _exit(0)
 
     def pauseMovie(self):
         """Pause button handler."""
@@ -170,6 +178,10 @@ class Client:
         elif requestCode == self.TEARDOWN and not self.state == self.INIT:
             request = self.teardown_stream(request)
 
+        else:
+            print("Invalid request code.")
+            return
+
         # Send the RTSP request using rtspSocket.
         self.rtspSocket.send(request)
 
@@ -180,7 +192,7 @@ class Client:
 
         # Write the RTSP request to be sent.
         request.append(self.TEARDOWN)
-        size = 0
+        size = 3
         request += size.to_bytes(2, 'big')
         self.playEvent.set()
 
@@ -197,12 +209,12 @@ class Client:
         # For the node a teardown and a Pause are the same,
         # Only the client knows the difference
         request.append(self.TEARDOWN)
-        size = 0
-        request += size.to_bytes(4, 'big')
+        size = 3
+        request += size.to_bytes(2, 'big')
         self.playEvent.set()
 
         # Keep track of the sent request.
-        self.state == self.READY
+        self.state = self.READY
         self.requestSent = self.PAUSE
         return request
 
@@ -216,7 +228,7 @@ class Client:
 
         # Keep track of the sent request.
         self.requestSent = self.PLAY
-        self.state == self.PLAYING
+        self.state = self.PLAYING
         self.openRtpPort()
         return request
 

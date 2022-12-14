@@ -1,6 +1,8 @@
+import os
 import socket
 import sys
 import time
+from os import _exit
 
 import msgpack
 import requests
@@ -32,7 +34,6 @@ class Server:
     def read_bootstrapper(self):
 
         data = requests.get('http://0.0.0.0:8080')
-        print(f"\ndata: {data.text}")
         lines = data.text.split('\n')
         for line in lines[:-1]:
             linha = line.split('-')
@@ -148,4 +149,8 @@ class Server:
 
 
 if __name__ == "__main__":
-    (Server()).main()
+    try:
+        (Server()).main()
+    except KeyboardInterrupt:
+        print("Server terminated")
+        _exit(0)

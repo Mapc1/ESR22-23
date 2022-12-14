@@ -126,15 +126,16 @@ impl RoutingTable {
     /**
     Assuming that the link is already in the links vector:
 
-    Returns **Ok** if the node becomes inactive.
+    Returns **Ok true** if the refuse come from a client.
     */
-    pub fn handle_refuse_packet(&mut self, peer_addr: String) -> Result<(), String> {
+    pub fn handle_refuse_packet(&mut self, peer_addr: String) -> Result<bool, String> {
         for l in self.links.iter_mut() {
             if l.addr == peer_addr {
                 println!("Refuse Packet from {}", l.addr);
                 l.active = false;
                 self.num_stream_connections -= 1;
-                return Ok(());
+
+                return Ok(false);
             }
         }
 
@@ -143,7 +144,8 @@ impl RoutingTable {
             if self.clients[i] == peer_addr {
                 println!("Refuse Packet from client {peer_addr}");
                 self.clients.remove(i);
-                return Ok(());
+
+                return Ok(true);
             }
         }
 

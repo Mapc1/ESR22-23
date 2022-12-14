@@ -6,6 +6,7 @@ use crate::node::flooding::routing_table::RoutingTable;
 use crate::node::packets::flood_packet::FloodPacket;
 use crate::node::packets::packet::PacketType;
 use crate::node::packets::stream_packet::StreamPacket;
+use crate::node::packets::utils::get_peer_addr;
 use crate::types::networking::Addr;
 
 const LISTENER_IP: &Addr = "0.0.0.0";
@@ -38,65 +39,100 @@ pub fn listener(table: &mut Arc<RwLock<RoutingTable>>) -> Result<(), String> {
 
     // accept connections and respond to each packet sent
     for stream in listener.incoming() {
-        match stream {
-            Ok(stream) => handle_packet(stream, table)?,
+        let tcp_stream = match stream {
+            Ok(stream) => stream,
             Err(_) => return Err("Something went wrong with the connection".to_string()),
+        };
+
+        println!(
+            "Accepted connection from {}",
+            tcp_stream.peer_addr().unwrap()
+        );
+
+        match handle_connection(tcp_stream, table) {
+            Ok(_) => (),
+            Err(err) => println!("{}", err),
         }
     }
+
     Ok(())
 }
 
-pub fn handle_packet(
-    mut stream: TcpStream,
+pub fn handle_connection(
+    stream: TcpStream,
     table: &mut Arc<RwLock<RoutingTable>>,
 ) -> Result<(), String> {
     // Packet -> [type: u8, size:u16] 3 bytes -> Data[size]
-    let mut buffer = [0; 1500];
 
-    let _size = match stream.read(&mut buffer) {
-        Ok(size) => size,
-        Err(_) => return Err("Error reading from stream".to_string()),
-    };
+    let mut my_stream = stream.try_clone().unwrap();
 
-    let packet_size = u16::from_be_bytes(buffer[1..3].try_into().unwrap());
+    loop {
+        let my_stream2 = my_stream.try_clone().unwrap();
+        let peer_addr = get_peer_addr(&my_stream2)?;
 
-    let mut packet = match PacketType::from_u8(buffer[0], buffer[3..packet_size as usize].to_vec())
-    {
-        Some(packet) => packet,
-        None => return Err("Invalid packet type".to_string()),
-    };
+        println!("[{peer_addr}] Blocking on read");
 
-    println!(
-        "[Packet Received] type: {}, size: {}",
-        buffer[0], packet_size
-    );
+        let mut buffer = [0; 1500];
 
-    let changed = packet.handle(stream, table)?;
-
-    if changed {
-        {
-            let lock = table.write().unwrap();
-
-            let flood_pack = FloodPacket::from_link(&lock.closest_link);
-
-            for l in lock.links.iter() {
-                if l.addr == lock.closest_link.addr {
-                    continue;
+        match my_stream.read(&mut buffer) {
+            Ok(bytes) => {
+                // Stream is closed
+                if bytes == 0 {
+                    println!("[{}] Stream closed", peer_addr);
+                    return Ok(());
                 }
 
-                //println!("Sending flood to {}", l.addr);
-                let mut stream =
-                    TcpStream::connect(format!("{}:{}", l.addr.clone(), LISTENER_PORT)).unwrap();
-                stream
-                    .write(flood_pack.to_bytes().unwrap().as_ref())
-                    .unwrap();
+                let packet_size = u16::from_be_bytes(buffer[1..3].try_into().unwrap());
+
+                let mut packet = match PacketType::from_u8(
+                    buffer[0],
+                    buffer[3..packet_size as usize].to_vec(),
+                ) {
+                    Some(packet) => packet,
+                    None => return Err("Invalid packet type".to_string()),
+                };
+
+                println!(
+                    "[{}] Packet received with type: {}, size: {}",
+                    peer_addr, buffer[0], packet_size
+                );
+
+                let changed = match packet.handle(my_stream2, table) {
+                    Ok(changed) => changed,
+                    Err(err) => {
+                        println!("{}", err);
+                        false
+                    }
+                };
+
+                if changed {
+                    {
+                        let lock = table.write().unwrap();
+
+                        let flood_pack = FloodPacket::from_link(&lock.closest_link);
+
+                        for l in lock.links.iter() {
+                            if l.addr == lock.closest_link.addr {
+                                continue;
+                            }
+
+                            //println!("Sending flood to {}", l.addr);
+                            let mut stream =
+                                TcpStream::connect(format!("{}:{}", l.addr.clone(), LISTENER_PORT))
+                                    .unwrap();
+                            stream
+                                .write(flood_pack.to_bytes().unwrap().as_ref())
+                                .unwrap();
+                        }
+                    }
+                }
+
+                println!("[{}] Packet handled {}", peer_addr, buffer[0]);
             }
-        }
+            Err(_) => {
+                println!("[{}] Something went wrong with the connection", peer_addr);
+                return Err("Error reading from stream".to_string());
+            }
+        };
     }
-
-    println!("Packet handled {}", buffer[0]);
-
-    // ...
-
-    Ok(())
 }

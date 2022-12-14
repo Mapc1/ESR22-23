@@ -5,8 +5,11 @@ use std::time::Duration;
 pub static TIMEOUT: Duration = Duration::new(5, 0);
 pub static RETRY_TIMES: u32 = 5;
 
-pub fn get_peer_addr(stream: &TcpStream) -> String {
-    stream.peer_addr().unwrap().ip().to_string()
+pub fn get_peer_addr(stream: &TcpStream) -> Result<String, String> {
+    match stream.peer_addr() {
+        Ok(addr) => Ok(addr.ip().to_string()),
+        Err(_) => Err("Unavailable to get peer addr".to_string()),
+    }
 }
 
 pub fn connect(peer_addr: &String, port: u16) -> Result<TcpStream, String> {
