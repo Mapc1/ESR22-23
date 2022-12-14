@@ -45,6 +45,7 @@ class Client:
         self.teardownRequested = False
         self.connectToServer()
         self.frameNbr = 0
+        self.openRtpPort()
 
     def createWidgets(self):
         """Build GUI."""
@@ -100,7 +101,6 @@ class Client:
         """Pause button handler."""
         if self.state == self.PLAYING:
             self.sendRtspRequest(self.PAUSE)
-            self.rtspSocket.shutdown(socket.SHUT_RDWR)
 
     def playMovie(self):
         """Play button handler."""
@@ -230,7 +230,6 @@ class Client:
         # Keep track of the sent request.
         self.requestSent = self.PLAY
         self.state = self.PLAYING
-        self.openRtpPort()
 
         return request
 

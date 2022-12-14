@@ -29,7 +29,6 @@ class ServerWorker:
             # Stop sending if request is PAUSE or TEARDOWN
             # Ele só deve enviar quando tem clientes, mas continua a "reproduzir" o vídeo
             if not self.clientInfo['active_clients']:
-                # print("\nNot sending\n")
                 pass
 
             else:

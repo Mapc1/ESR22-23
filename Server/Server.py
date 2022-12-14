@@ -26,7 +26,7 @@ class Server:
     INIT = 0
     READY = 1
     PLAYING = 2
-    state = INIT
+    state = READY
 
     clientInfo = {}
     active_clients = False
@@ -60,12 +60,13 @@ class Server:
         packet += pack_data
 
         for vizinho in vizinhos:
-            self.clientInfo[vizinho] = {}
-            self.clientInfo[vizinho]['videoStream'] = VideoStream(video_file)
-            self.clientInfo[vizinho]['state'] = self.READY
-            self.clientInfo[vizinho]['active_clients'] = False
-            self.clientInfo[vizinho]['address'] = vizinho
-            self.clientInfo[vizinho]['rtpPort'] = self.RTP_PORT
+            if self.clientInfo.get(vizinho) is None:
+                self.clientInfo[vizinho] = {}
+                self.clientInfo[vizinho]['videoStream'] = VideoStream(video_file)
+                self.clientInfo[vizinho]['state'] = self.READY
+                self.clientInfo[vizinho]['active_clients'] = False
+                self.clientInfo[vizinho]['address'] = vizinho
+                self.clientInfo[vizinho]['rtpPort'] = self.RTP_PORT
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             try:
                 s.connect((vizinho, self.RTSP_PORT))
@@ -113,13 +114,13 @@ class Server:
 
         # Process TEARDOWN request
         elif requestType == self.TEARDOWN:
-
             print("processing TEARDOWN\n")
+            self.clientInfo[addr]['state'] = self.READY
             self.clientInfo[addr]['active_clients'] = False
 
     def flood_cycle(self, server_address, video_file):
         while True:
-            time.sleep(15)
+            time.sleep(5)
             print("Sending flooding")
             self.flood(server_address, video_file)
 

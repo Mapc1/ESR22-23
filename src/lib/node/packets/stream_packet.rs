@@ -44,7 +44,7 @@ impl StreamPacket {
                 continue;
             }
 
-            println!("Sending {} bytes to stream {}", self.data.len(), link.addr);
+            println!("Sending {} bytes to stream {}", pack_bytes.len(), link.addr);
             if let Err(err) =
                 socket.send_to(&pack_bytes, format!("{}:{}", link.addr, LISTENER_PORT))
             {

@@ -39,12 +39,7 @@ impl Packet for RequestPacket {
         table: &mut Arc<RwLock<RoutingTable>>,
     ) -> Result<bool, String> {
         let mut lock = table.write().unwrap();
-        match lock.handle_request_packet(get_peer_addr(&stream)?) {
-            Ok(_) => Ok(false),
-            Err(e) => Err(e),
-        }
-        .unwrap();
-
+        lock.handle_request_packet(get_peer_addr(&stream)?)?; 
         if lock.closest_link.addr == "dummy" {
             return Err("Node is not connected to the network".to_string());
         }

@@ -15,8 +15,8 @@ pub enum PacketType {
     Flood(FloodPacket),
     Request(RequestPacket), // Request for stream content
     Ack(AckPacket),
-    Stream(StreamPacket),
     Refuse(RefusePacket),
+    Stream(StreamPacket),
 }
 
 impl PacketType {

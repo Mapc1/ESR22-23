@@ -119,7 +119,7 @@ impl RoutingTable {
         for l in self.links.iter_mut() {
             if l.addr == peer_addr {
                 println!("request from {}", l.addr);
-                if l.active {
+                if l.has_clients {
                     return Err("Link is already receiving the stream...".to_string());
                 }
                 l.active = true;
@@ -148,7 +148,7 @@ impl RoutingTable {
         for l in self.links.iter_mut() {
             if l.addr == peer_addr {
                 println!("Refuse Packet from {}", l.addr);
-                l.active = false;
+                l.has_clients = false;
                 self.num_stream_connections -= 1;
 
                 return Ok(false);
@@ -160,6 +160,7 @@ impl RoutingTable {
             if self.clients[i] == peer_addr {
                 println!("Refuse Packet from client {peer_addr}");
                 self.clients.remove(i);
+                self.num_stream_connections -= 1;
 
                 return Ok(true);
             }

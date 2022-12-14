@@ -42,13 +42,7 @@ impl Packet for RefusePacket {
         table: &mut Arc<RwLock<RoutingTable>>,
     ) -> Result<bool, String> {
         let mut table_lock = table.write().unwrap();
-        let is_client = table_lock.handle_refuse_packet(get_peer_addr(&stream)?)?;
-
-        if is_client {
-            // FIXME: Is this needed?
-            // Shutting down the connection with the client
-            stream.shutdown(std::net::Shutdown::Both).unwrap();
-        }
+        table_lock.handle_refuse_packet(get_peer_addr(&stream)?)?;
 
         if table_lock.has_active_connections() {
             Ok(false)
