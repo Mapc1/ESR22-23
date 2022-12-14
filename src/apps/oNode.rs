@@ -50,9 +50,9 @@ fn main() -> Result<(), ()> {
     let bootstrapper_addr = match args.get(2) {
         Some(addr) => addr,
         None => {
-            logger.log_error(
+            logger.log_info(
                 "No bootstrapper ip address as the second argument, searching for the default bootstrap address...".to_string()
-            ).expect("Log error");
+            ).expect("Log info");
 
             DEFAULT_BOOTSTRAPPER_ADDR
         }
@@ -103,7 +103,7 @@ fn main() -> Result<(), ()> {
             Err(())
         }
     });
-    
+
     let logger_copy = logger.clone();
     std::thread::spawn(move || match udp_listener(&mut shared_mem) {
         Ok(_) => Ok(()),

@@ -230,6 +230,7 @@ class Client:
         self.requestSent = self.PLAY
         self.state = self.PLAYING
         self.openRtpPort()
+
         return request
 
     def openRtpPort(self):
